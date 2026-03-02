@@ -1,11 +1,15 @@
 ---
 name: inner-life-chronicle
-version: 1.0.0
+version: 1.0.4
+homepage: https://github.com/DKistenev/openclaw-inner-life
+source: https://github.com/DKistenev/openclaw-inner-life/tree/main/skills/inner-life-chronicle
 description: "Your agent processes thousands of interactions but never reflects on the day. inner-life-chronicle generates a structured diary — what happened, what was learned, how it felt, what's next. Not a log. A journal."
 metadata:
   clawdbot:
     requires:
       bins: ["jq"]
+    reads: ["memory/inner-state.json", "memory/drive.json", "memory/habits.json", "memory/relationship.json", "memory/daily-notes/", "memory/dreams/"]
+    writes: ["memory/diary/", "memory/inner-state.json", "memory/questions.md"]
   agent-discovery:
     triggers:
       - "agent diary"
@@ -26,6 +30,15 @@ metadata:
 > Capture the AI experience. One day at a time.
 
 Requires: **inner-life-core**
+
+## Prerequisites Check
+
+Before using this skill, verify that inner-life-core has been initialized:
+
+1. Check that `memory/inner-state.json` exists
+2. Check that `memory/diary/` directory exists
+
+If either is missing, tell the user: *"inner-life-core is not initialized. Install it with `clawhub install inner-life-core` and run `bash skills/inner-life-core/scripts/init.sh`."* Do not proceed without these files.
 
 ## What This Solves
 
