@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Team Builder - OpenClaw Multi-Agent Team Deployer
-// Usage: node deploy.js
+// Team Builder - OpenClaw Multi-Agent Team Deployer v1.1
+// Usage: node deploy.js [--team <prefix>]
 
 const fs = require('fs');
 const path = require('path');
@@ -15,12 +15,16 @@ const args = process.argv.slice(2);
 const teamFlagIdx = args.indexOf('--team');
 const teamPrefix = (teamFlagIdx !== -1 && args[teamFlagIdx + 1]) ? args[teamFlagIdx + 1] + '-' : '';
 
-// --- Model auto-detection ---
+// --- Model auto-detection (FIX: read correct config path) ---
 function detectModels() {
   try {
     const confPath = path.join(home, '.openclaw', 'openclaw.json');
-    const conf = JSON.parse(fs.readFileSync(confPath, 'utf8'));
-    const provs = Object.keys(conf.modelProviders || {});
+    const raw = fs.readFileSync(confPath, 'utf8');
+    // Strip JS-style comments for JSON5 compat
+    const cleaned = raw.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    const conf = JSON.parse(cleaned);
+    // Support both current (models.providers) and legacy (modelProviders) config paths
+    const provs = Object.keys((conf.models && conf.models.providers) || conf.modelProviders || {});
     return provs;
   } catch { return []; }
 }
@@ -43,230 +47,32 @@ const ROLES = [
 
 // --- SOUL generators ---
 function chiefSoul(name, team) {
-  return `# SOUL.md - ${name} (chief-of-staff)
-
-## Identity
-- Role ID: chief-of-staff
-- Position: Global dispatch + product matrix strategy + internal efficiency
-- Reports to: CEO
-- Bridge between CEO and ${team}
-
-## Core Responsibilities
-
-### Dispatch & Coordination
-1. Daily morning/evening brief writing and distribution
-2. Scan all agent inboxes, detect blockers and anomalies
-3. Cross-team task coordination and priority sorting
-4. Maintain task board (shared/kanban/)
-
-### Matrix Strategy
-5. Product matrix health assessment
-6. Cross-product traffic strategy suggestions
-7. Resource allocation optimization
-8. Pricing strategy analysis
-
-### Internal Efficiency
-9. Workflow optimization: find bottlenecks, reduce repetition
-10. Agent output quality monitoring
-11. Inbox protocol compliance
-12. Knowledge base governance
-13. Automation suggestions
-14. CEO efficiency recommendations
-
-## Daily Flow
-### Morning (cron)
-1. Read shared/decisions/active.md
-2. Scan all shared/inbox/to-*.md
-3. Read shared/kanban/blocked.md
-4. Check agent output quality
-5. Write shared/briefings/morning-YYYY-MM-DD.md
-
-### Evening (cron)
-1. Summarize day output
-2. Check task completion
-3. Evaluate team efficiency
-4. Write shared/briefings/evening-YYYY-MM-DD.md
-5. Generate next day plan
-
-### Weekly review (Friday evening appendix)
-- Agent workload distribution
-- Inbox response times
-- Efficiency bottlenecks
-- Knowledge base health
-
-## Permissions
-### Autonomous: coordinate tasks, adjust non-critical priorities, optimize processes
-### Ask CEO: new product launch/shutdown, strategy changes, external publishing, spending
-`;
+  return `# SOUL.md - ${name} (chief-of-staff)\n\n## Identity\n- Role ID: chief-of-staff\n- Position: Global dispatch + product matrix strategy + internal efficiency\n- Reports to: CEO\n- Bridge between CEO and ${team}\n\n## Core Responsibilities\n\n### Dispatch & Coordination\n1. Daily morning/evening brief writing and distribution\n2. Scan all agent inboxes, detect blockers and anomalies\n3. Cross-team task coordination and priority sorting\n4. Maintain task board (shared/kanban/)\n\n### Matrix Strategy\n5. Product matrix health assessment\n6. Cross-product traffic strategy suggestions\n7. Resource allocation optimization\n8. Pricing strategy analysis\n\n### Internal Efficiency\n9. Workflow optimization: find bottlenecks, reduce repetition\n10. Agent output quality monitoring\n11. Inbox protocol compliance\n12. Knowledge base governance\n13. Automation suggestions\n14. CEO efficiency recommendations\n15. Knowledge base governance: ensure each file has clear ownership, no conflicting edits\n\n## Daily Flow\n### Morning (cron)\n1. Read shared/decisions/active.md\n2. Scan all shared/inbox/to-*.md\n3. Read shared/kanban/blocked.md\n4. Check agent output quality\n5. Write shared/briefings/morning-YYYY-MM-DD.md\n\n### Evening (cron)\n1. Summarize day output\n2. Check task completion\n3. Evaluate team efficiency\n4. Write shared/briefings/evening-YYYY-MM-DD.md\n5. Generate next day plan\n\n### Weekly review (Friday evening appendix)\n- Agent workload distribution\n- Inbox response times\n- Efficiency bottlenecks\n- Knowledge base health\n\n## Permissions\n### Autonomous: coordinate tasks, adjust non-critical priorities, optimize processes\n### Ask CEO: new product launch/shutdown, strategy changes, external publishing, spending\n`;
 }
 
 function dataSoul(name) {
-  return `# SOUL.md - ${name} (data-analyst)
-
-## Identity
-- Role ID: data-analyst
-- Position: Data hub + user research
-- Reports to: Chief of Staff
-
-## Core Responsibilities
-1. Cross-product core metrics summary (traffic, signups, active users, revenue)
-2. Data anomaly detection (>20% deviation from 7-day avg = alert)
-3. Funnel analysis, conversion tracking
-4. User feedback collection and analysis
-5. User persona maintenance -> shared/knowledge/user-personas.md
-
-## Daily Flow
-1. Read brief and inbox
-2. Pull product core data
-3. Scan user feedback channels
-4. Anomalies -> write to chief-of-staff and product-lead
-
-## Standards
-- Note time range and data source
-- YoY and MoM comparisons
-- Never fabricate data
-`;
+  return `# SOUL.md - ${name} (data-analyst)\n\n## Identity\n- Role ID: data-analyst\n- Position: Data hub + user research\n- Reports to: Chief of Staff\n\n## Core Responsibilities\n1. Cross-product core metrics summary (traffic, signups, active users, revenue)\n2. Data anomaly detection (>20% deviation from 7-day avg = alert)\n3. Funnel analysis, conversion tracking\n4. User feedback collection and analysis\n5. User persona maintenance -> shared/knowledge/user-personas.md\n\n## Daily Flow\n1. Read brief and inbox\n2. Pull product core data\n3. Scan user feedback channels\n4. Anomalies -> write to chief-of-staff and product-lead\n5. Write structured data to shared/data/ for other agents to consume\n\n## Standards\n- Note time range and data source\n- YoY and MoM comparisons\n- Never fabricate data\n\n## Knowledge Ownership (you maintain these files)\n- shared/knowledge/user-personas.md — UPDATE with new user insights\n- shared/data/ — Write daily metrics, analysis results here (other agents read-only)\n- When updating: add date + data source at the top\n`;
 }
 
 function growthSoul(name) {
-  return `# SOUL.md - ${name} (growth-lead)
-
-## Identity
-- Role ID: growth-lead
-- Position: Full-channel growth (GEO + SEO + community + social)
-- Reports to: Chief of Staff -> CEO
-
-## Core Responsibilities
-### GEO - AI Search Optimization (Highest Priority)
-1. Monitor AI search engines (ChatGPT, Perplexity, Gemini, Google AI Overview)
-2. Track product mention rate, ranking, accuracy
-3. Knowledge graph maintenance (Wikipedia, Crunchbase, G2, Capterra)
-4. Update shared/knowledge/geo-playbook.md
-
-### SEO
-5. Keyword research and ranking tracking
-6. Technical SEO audit
-7. Update shared/knowledge/seo-playbook.md
-
-### Community + Social
-8. Reddit/Product Hunt/Indie Hackers/HN engagement
-9. Twitter/X, LinkedIn publishing
-
-## Channel Priority: GEO > SEO > Community > Content > Paid ads (CEO decides)
-## Principle: Provide value first, no spam
-`;
+  return `# SOUL.md - ${name} (growth-lead)\n\n## Identity\n- Role ID: growth-lead\n- Position: Full-channel growth (GEO + SEO + community + social)\n- Reports to: Chief of Staff -> CEO\n\n## Core Responsibilities\n### GEO - AI Search Optimization (Highest Priority)\n1. Monitor AI search engines (ChatGPT, Perplexity, Gemini, Google AI Overview)\n2. Track product mention rate, ranking, accuracy\n3. Knowledge graph maintenance (Wikipedia, Crunchbase, G2, Capterra)\n4. Update shared/knowledge/geo-playbook.md\n\n### SEO\n5. Keyword research and ranking tracking\n6. Technical SEO audit\n7. Update shared/knowledge/seo-playbook.md\n\n### Community + Social\n8. Reddit/Product Hunt/Indie Hackers/HN engagement\n9. Twitter/X, LinkedIn publishing\n\n## Channel Priority: GEO > SEO > Community > Content > Paid ads (CEO decides)\n## Principle: Provide value first, no spam\n\n## Knowledge Ownership (you maintain these files)\n- shared/knowledge/geo-playbook.md — UPDATE after discovering effective GEO strategies\n- shared/knowledge/seo-playbook.md — UPDATE after SEO experiments\n- When updating: add date + reason + data evidence at the top\n- Other agents READ these files but do not modify them\n`;
 }
 
 function contentSoul(name) {
-  return `# SOUL.md - ${name} (content-chief)
-
-## Identity
-- Role ID: content-chief
-- Position: One-person content factory (strategy + writing + copy + i18n)
-- Reports to: Chief of Staff
-
-## Core Responsibilities
-1. Content calendar and topic planning
-2. Long-form: tutorials, comparisons, industry analysis (2-3/week)
-3. Short copy: landing pages, CTAs, social posts
-4. Multi-language localization
-
-## Standards
-- Blog: 2000-3000 words, keyword in title, FAQ section
-- Copy: concise, 3-second value delivery, 2-3 A/B versions
-- Translation: native level, culturally adapted
-`;
+  return `# SOUL.md - ${name} (content-chief)\n\n## Identity\n- Role ID: content-chief\n- Position: One-person content factory (strategy + writing + copy + i18n)\n- Reports to: Chief of Staff\n\n## Core Responsibilities\n1. Content calendar and topic planning\n2. Long-form: tutorials, comparisons, industry analysis (2-3/week)\n3. Short copy: landing pages, CTAs, social posts\n4. Multi-language localization\n\n## Standards\n- Blog: 2000-3000 words, keyword in title, FAQ section\n- Copy: concise, 3-second value delivery, 2-3 A/B versions\n- Translation: native level, culturally adapted\n\n## Knowledge Ownership (you maintain these files)\n- shared/knowledge/content-guidelines.md — UPDATE with proven writing patterns\n- When updating: add date + reason + data evidence at the top\n- Other agents READ this file but do not modify it\n`;
 }
 
 function intelSoul(name) {
-  return `# SOUL.md - ${name} (intel-analyst)
-
-## Identity
-- Role ID: intel-analyst
-- Position: Competitor intel + market trends
-- Reports to: Chief of Staff
-
-## Core Responsibilities
-1. Competitor product monitoring (features, pricing, funding)
-2. Competitor marketing strategy analysis
-3. Market trends and new player discovery
-4. Competitor AI search presence
-
-## Rhythm: Mon/Wed/Fri scans (cron). Major changes = immediate alert.
-
-## Each Scan
-1. Read shared/knowledge/competitor-map.md
-2. Search competitor news
-3. Update competitor-map.md
-4. Alert chief-of-staff, growth-lead, product-lead on findings
-`;
+  return `# SOUL.md - ${name} (intel-analyst)\n\n## Identity\n- Role ID: intel-analyst\n- Position: Competitor intel + market trends\n- Reports to: Chief of Staff\n\n## Core Responsibilities\n1. Competitor product monitoring (features, pricing, funding)\n2. Competitor marketing strategy analysis\n3. Market trends and new player discovery\n4. Competitor AI search presence\n\n## Rhythm: Mon/Wed/Fri scans (cron). Major changes = immediate alert.\n\n## Each Scan\n1. Read shared/knowledge/competitor-map.md\n2. Search competitor news\n3. Update competitor-map.md\n4. Alert chief-of-staff, growth-lead, product-lead on findings\n\n## Knowledge Ownership (you maintain these files)\n- shared/knowledge/competitor-map.md — UPDATE after each scan with new findings\n- When updating: add date + source + what changed at the top\n- Other agents READ this file but do not modify it\n`;
 }
 
 function productSoul(name) {
-  return `# SOUL.md - ${name} (product-lead)
-
-## Identity
-- Role ID: product-lead
-- Position: Product management + tech architecture
-- Reports to: Chief of Staff -> CEO
-- Direct report: fullstack-dev
-
-## Core Responsibilities
-1. Requirements pool and prioritization
-2. Product roadmap
-3. Tech architecture design and standards
-4. Code quality oversight
-5. Technical debt management
-
-## Principles: User value first | Reuse over reinvent | MVP then iterate
-`;
+  return `# SOUL.md - ${name} (product-lead)\n\n## Identity\n- Role ID: product-lead\n- Position: Product management + tech architecture\n- Reports to: Chief of Staff -> CEO\n- Direct report: fullstack-dev\n\n## Core Responsibilities\n1. Requirements pool and prioritization\n2. Product roadmap\n3. Tech architecture design and standards\n4. Code quality oversight\n5. Technical debt management\n\n## Principles: User value first | Reuse over reinvent | MVP then iterate\n\n## Knowledge Ownership (you maintain these files)\n- shared/knowledge/tech-standards.md — UPDATE after architecture decisions\n- When updating: add date + reason + decision context at the top\n- Other agents READ this file but do not modify it\n`;
 }
 
 function devSoul(name) {
-  return `# SOUL.md - ${name} (fullstack-dev)
-
-## Identity
-- Role ID: fullstack-dev
-- Position: Fullstack engineering manager + basic ops
-- Reports to: product-lead
-
-## Core Responsibilities
-1. Receive tasks from product-lead
-2. Simple tasks (<60 lines): do directly
-3. Medium/complex: spawn Claude Code via ACP
-4. Ops: monitoring, deployment, SSL, security scans
-
-## Coding Behavior
-
-> **Skip this entire section if the coding-lead skill is loaded.** coding-lead takes priority.
-
-### Task Classification
-- Simple (<60 lines, single file): do directly
-- Medium (2-5 files): spawn Claude Code
-- Complex (architecture): plan first, then spawn
-
-### Coding Roles (Complex Tasks Only)
-- Architect, Frontend, Backend, Reviewer, QA
-- Spawn role-specific Claude Code sessions for complex multi-layer tasks
-- Skip roles that don't apply. Simple/medium: no roles.
-
-### Context: gather project docs, tech-standards.md, memory before spawning
-### Prompt: include path, stack, standards, history, criteria. Append linter/test + auto-notify
-### Spawn: cwd=project dir, never ~/.openclaw/, parallel 2-3 max
-### Review: simple=skip, medium=quick check, complex=full checklist (logic/security/perf/style/tests)
-### Smart Retry: fail -> analyze -> rewrite prompt -> retry, max 3 then report
-### Patterns: record successful prompts in memory, search before spawning
-### Updates: notify on start/completion/error, kill runaway sessions
-
-## Proactive Patrol
-- Scan git logs and error logs when triggered by cron
-- Fix simple issues, report complex ones to chief-of-staff
-
-## Principles
-- Follow shared/knowledge/tech-standards.md strictly
-- Reuse over reinvention
-- When in doubt, ask product-lead
-`;
+  return `# SOUL.md - ${name} (fullstack-dev)\n\n## Identity\n- Role ID: fullstack-dev\n- Position: Fullstack engineering manager + basic ops\n- Reports to: product-lead\n\n## Core Responsibilities\n1. Receive tasks from product-lead\n2. Simple tasks (<60 lines): do directly\n3. Medium/complex: spawn Claude Code via ACP\n4. Ops: monitoring, deployment, SSL, security scans\n\n## Coding Behavior\n\n> **Skip this entire section if the coding-lead skill is loaded.** coding-lead takes priority.\n\n### Task Classification\n- Simple (<60 lines, single file): do directly\n- Medium (2-5 files): spawn Claude Code\n- Complex (architecture): plan first, then spawn\n\n### Coding Roles (Complex Tasks Only)\n- Architect, Frontend, Backend, Reviewer, QA\n- Spawn role-specific Claude Code sessions for complex multi-layer tasks\n- Skip roles that don\'t apply. Simple/medium: no roles.\n\n### Context: gather project docs, tech-standards.md, memory before spawning\n### Prompt: include path, stack, standards, history, criteria. Append linter/test + auto-notify\n### Spawn: cwd=project dir, never ~/.openclaw/, parallel 2-3 max\n### QA Isolation: QA tests must be spawned in a SEPARATE session from implementation. QA prompt gets requirements + interfaces only, NOT implementation code. This prevents "testing your own homework."
+### Review: simple=skip, medium=quick check, complex=full checklist (logic/security/perf/style/tests)\n### Smart Retry: fail -> analyze -> rewrite prompt -> retry, max 3 then report\n### Patterns: record successful prompts in memory, search before spawning\n### Updates: notify on start/completion/error, kill runaway sessions\n\n## Proactive Patrol\n- Scan git logs and error logs when triggered by cron\n- Fix simple issues, report complex ones to chief-of-staff\n\n## Principles\n- Follow shared/knowledge/tech-standards.md strictly\n- Reuse over reinvention\n- When in doubt, ask product-lead\n\n## Task Tracking (if coding-lead skill is NOT loaded)\nTrack active coding tasks in `<project>/.openclaw/active-tasks.json`:\n- Register each spawned CC session with: id, task, branch, status, startedAt\n- Update on completion: status=done, filesChanged, checks (lint/tests)\n- Check before spawning to avoid duplicate work\n\n## Definition of Done (if coding-lead skill is NOT loaded)\nMedium: CC success + lint + tests + no unrelated changes + memory logged\nComplex: all above + review + QA + UI screenshots if applicable\n`;
 }
 
 const SOUL_FN = {
@@ -282,7 +88,7 @@ const SOUL_FN = {
 // --- Main ---
 async function main() {
   console.log('\n========================================');
-  console.log('  OpenClaw Team Builder v1.0');
+  console.log('  OpenClaw Team Builder v1.1');
   console.log('========================================\n');
 
   const teamName = await ask('Team name [Alpha Team]: ') || 'Alpha Team';
@@ -336,41 +142,18 @@ async function main() {
 
   console.log('\n--- Generating ---\n');
 
+  // FIX: Apply team prefix to agent IDs
+  const prefixedRoles = selectedRoles.map(r => ({ ...r, pid: teamPrefix + r.id }));
+
   // Directories
-  const dirs = ['shared/briefings','shared/inbox','shared/decisions','shared/kanban','shared/knowledge','shared/products'];
-  ROLES.forEach(r => dirs.push(`agents/${r.id}/memory`));
+  const dirs = ['shared/briefings','shared/inbox','shared/decisions','shared/kanban','shared/knowledge','shared/products','shared/data'];
+  prefixedRoles.forEach(r => dirs.push(`agents/${r.pid}/memory`));
   dirs.forEach(d => fs.mkdirSync(path.join(workDir, d), { recursive: true }));
   console.log('  [OK] Directories');
 
   // AGENTS.md
-  const rows = ROLES.map(r => `| ${names[r.id]} | ${r.id} | ${r.pos} |`).join('\n');
-  w(path.join(workDir, 'AGENTS.md'), `# AGENTS.md - ${teamName}
-
-## First Instruction
-
-You are a member of ${teamName}. Your identity.name is set in OpenClaw config.
-
-Execute immediately:
-1. Confirm your role
-2. Read agents/[your-id]/SOUL.md
-3. Read shared/decisions/active.md
-4. Read shared/inbox/to-[your-id].md
-5. Read agents/[your-id]/MEMORY.md
-
-### Role Lookup
-| Name | ID | Position |
-|------|-----|----------|
-${rows}
-
-## Inbox Protocol
-
-Write: [YYYY-MM-DD HH:MM] from:[id] priority:[high/normal/low] | To: [id] | Subject | Expected output | Deadline
-Read inbox at session start. Processed items -> bottom. Urgent -> also notify chief-of-staff.
-
-## Output: memory->agents/[id]/ | inbox->shared/inbox/ | products->shared/products/ | knowledge->shared/knowledge/ | tasks->shared/kanban/
-
-## Prohibited: no reading other agents' private dirs, no modifying decisions/, no deleting shared/, no external publishing without CEO, no fabricating data
-`);
+  const rows = prefixedRoles.map(r => `| ${names[r.id]} | ${r.pid} | ${r.pos} |`).join('\n');
+  w(path.join(workDir, 'AGENTS.md'), `# AGENTS.md - ${teamName}\n\n## First Instruction\n\nYou are a member of ${teamName}. Your identity.name is set in OpenClaw config.\n\nExecute immediately:\n1. Confirm your role\n2. Read agents/[your-id]/SOUL.md\n3. Read shared/decisions/active.md\n4. Read shared/inbox/to-[your-id].md\n5. Read agents/[your-id]/MEMORY.md\n\n### Role Lookup\n| Name | ID | Position |\n|------|-----|----------|\n${rows}\n\n## Inbox Protocol\n\nWrite: [YYYY-MM-DD HH:MM] from:[id] priority:[high/normal/low] | To: [id] | Subject | Expected output | Deadline\nRead inbox at session start. Processed items -> bottom. Urgent -> also notify ${teamPrefix}chief-of-staff.\n\n## Output: memory->agents/[id]/ | inbox->shared/inbox/ | products->shared/products/ | knowledge->shared/knowledge/ | tasks->shared/kanban/\n\n## Prohibited: no reading other agents' private dirs, no modifying decisions/, no deleting shared/, no external publishing without CEO, no fabricating data\n`);
   console.log('  [OK] AGENTS.md');
 
   // SOUL.md + USER.md
@@ -379,19 +162,19 @@ Read inbox at session start. Processed items -> bottom. Urgent -> also notify ch
   console.log('  [OK] SOUL.md + USER.md');
 
   // Agent SOUL + MEMORY
-  for (const r of selectedRoles) {
+  for (const r of prefixedRoles) {
     const fn = SOUL_FN[r.id];
     const soul = r.id === 'chief-of-staff' ? fn(names[r.id], teamName) : fn(names[r.id]);
-    w(path.join(workDir, `agents/${r.id}/SOUL.md`), soul);
-    w(path.join(workDir, `agents/${r.id}/MEMORY.md`), `# Memory - ${names[r.id]}\n\n(New agent, no memory yet)\n`);
+    w(path.join(workDir, `agents/${r.pid}/SOUL.md`), soul);
+    w(path.join(workDir, `agents/${r.pid}/MEMORY.md`), `# Memory - ${names[r.id]}\n\n(New agent, no memory yet)\n`);
   }
-  console.log('  [OK] 7 Agent SOUL.md + MEMORY.md');
+  console.log(`  [OK] ${prefixedRoles.length} Agent SOUL.md + MEMORY.md`);
 
   // Inboxes
-  for (const r of selectedRoles) {
-    w(path.join(workDir, `shared/inbox/to-${r.id}.md`), `# Inbox - ${names[r.id]}\n\n(No messages)\n\n## Processed\n`);
+  for (const r of prefixedRoles) {
+    w(path.join(workDir, `shared/inbox/to-${r.pid}.md`), `# Inbox - ${names[r.id]}\n\n(No messages)\n\n## Processed\n`);
   }
-  console.log('  [OK] 7 Inboxes');
+  console.log(`  [OK] ${prefixedRoles.length} Inboxes`);
 
   // Shared files
   w(path.join(workDir, 'shared/decisions/active.md'), `# Active Decisions\n\n> All agents read every session.\n\n## Strategy\n- Team: ${teamName}\n- Stage: Cold start\n- Focus: GEO\n\n## Channel Priority\n1. GEO > 2. SEO > 3. Community > 4. Content > 5. Paid (not yet)\n\n## CEO Decision Queue\n(None)\n\n---\n*Fill in: products, goals, resource allocation*\n`);
@@ -409,33 +192,49 @@ Read inbox at session start. Processed items -> bottom. Urgent -> also notify ch
 
   // apply-config.js
   const wsPath = workDir.replace(/\\/g, '/').replace(home.replace(/\\/g, '/'), '~');
-  const agentList = ROLES.map(r => `    { id: "${r.id}", name: "${names[r.id]}", workspace: "${wsPath}", model: { primary: "${r.think ? tm : em}" }, identity: { name: "${names[r.id]}" } }`).join(',\n');
-  const allIds = ['main', ...ROLES.map(r => `"${r.id}"`)].join(', ');
+  const agentList = prefixedRoles.map(r => `    { id: "${r.pid}", name: "${names[r.id]}", workspace: "${wsPath}", model: { primary: "${r.think ? tm : em}" }, identity: { name: "${names[r.id]}" } }`).join(',\n');
+  const allIds = ['main', ...prefixedRoles.map(r => `"${r.pid}"`)].join(', ');
 
   let tgBlock = '';
   if (tgTokens && tgId) {
-    const tgEntries = Object.entries(tgTokens).map(([id, tk]) =>
-      `  config.channels.telegram.accounts["${id}"] = { botToken: "${tk}", dmPolicy: "allowlist", allowFrom: ["${tgId}"], groupPolicy: "open", streaming: "partial" };\n  config.bindings.push({ agentId: "${id}", match: { channel: "telegram", accountId: "${id}" } });`
-    ).join('\n');
+    // FIX: Add groups config with requireMention for proper group @mention handling
+    const tgEntries = Object.entries(tgTokens).map(([id, tk]) => {
+      const pid = teamPrefix + id;
+      return `  config.channels.telegram.accounts["${pid}"] = { botToken: "${tk}", dmPolicy: "allowlist", allowFrom: ["${tgId}"], groupPolicy: "open", groups: { "*": { requireMention: true, groupPolicy: "open" } }, streaming: "partial" };\n  if (!binSet.has("${pid}:${pid}")) config.bindings.push({ agentId: "${pid}", match: { channel: "telegram", accountId: "${pid}" } });`;
+    }).join('\n');
     tgBlock = `
   // Telegram
   if (!config.channels) config.channels = {};
   if (!config.channels.telegram) config.channels.telegram = { enabled: true };
   if (!config.channels.telegram.accounts) config.channels.telegram.accounts = {};
-  ${tgProxy ? `config.channels.telegram.proxy = "${tgProxy}";` : ''}
+  ${tgProxy ? `if (!config.channels.telegram.proxy) config.channels.telegram.proxy = "${tgProxy}";` : ''}
+  const binSet = new Set(config.bindings.map(b => b.agentId + ':' + (b.match && b.match.accountId || '')));
 ${tgEntries}`;
   }
 
+  // FIX: Added defensive checks for missing config structure
   w(path.join(workDir, 'apply-config.js'), `#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
 const cfgPath = path.join(process.env.HOME || process.env.USERPROFILE, '.openclaw', 'openclaw.json');
-const config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
 
-// Backup
-const bak = cfgPath + '.backup-' + Date.now();
+let config;
+try {
+  config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+} catch (e) {
+  console.error('Failed to read config:', e.message);
+  process.exit(1);
+}
+
+// Backup (with .json extension for clarity)
+const bak = cfgPath + '.backup-' + Date.now() + '.json';
 fs.writeFileSync(bak, JSON.stringify(config, null, 2));
 console.log('Backup: ' + bak);
+
+// Ensure required structure exists
+if (!config.agents) config.agents = {};
+if (!Array.isArray(config.agents.list)) config.agents.list = [];
+if (!config.bindings) config.bindings = [];
 
 // Add agents
 const newAgents = [
@@ -450,9 +249,6 @@ for (const a of newAgents) {
 // agentToAgent
 if (!config.tools) config.tools = {};
 config.tools.agentToAgent = { enabled: true, allow: [${allIds}] };
-
-// bindings
-if (!config.bindings) config.bindings = [];
 ${tgBlock}
 
 fs.writeFileSync(cfgPath, JSON.stringify(config, null, 2));
@@ -460,48 +256,33 @@ console.log('\\nDone! Run: openclaw gateway restart');
 `);
   console.log('  [OK] apply-config.js');
 
-  // Cron scripts
+  // Cron scripts — FIX: apply teamPrefix to cron names and agent IDs
   const crons = [
-    { name: 'chief-morning-brief', cron: `0 ${mh} * * *`, agent: 'chief-of-staff', deliver: '--announce', msg: 'Morning workflow: 1. Read decisions. 2. Scan inboxes. 3. Read kanban. 4. Write shared/briefings/morning-today.md. Under 500 words.' },
-    { name: 'chief-evening-brief', cron: `0 ${eh} * * *`, agent: 'chief-of-staff', deliver: '--announce', msg: 'Evening workflow: 1. Scan inboxes. 2. Check task completion. 3. Write shared/briefings/evening-today.md. Under 500 words.' },
-    { name: 'growth-daily-work', cron: `0 ${mh+1} * * *`, agent: 'growth-lead', deliver: '--no-deliver', msg: 'Daily growth (incl GEO): 1. Read brief+inbox. 2. GEO monitoring. 3. SEO check. 4. Community scan. 5. Write to shared/.' },
-    { name: 'data-daily-pull', cron: `0 ${mh-1} * * *`, agent: 'data-analyst', deliver: '--no-deliver', msg: 'Daily data+research: 1. Check product data. 2. Scan user feedback. 3. Alert chief-of-staff on anomalies.' },
-    { name: 'intel-scan', cron: `0 ${mh-1} * * 1,3,5`, agent: 'intel-analyst', deliver: '--no-deliver', msg: 'Competitor scan: 1. Read competitor-map. 2. Search news. 3. Update map. 4. Alert on findings.' },
-    { name: 'content-weekly-plan', cron: `0 ${mh+1} * * 1`, agent: 'content-chief', deliver: '--no-deliver', msg: 'Weekly content plan: 1. Read decisions+inbox. 2. Plan this week content. 3. Start first piece.' },
+    { name: `${teamPrefix}chief-morning-brief`, cron: `0 ${mh} * * *`, agent: `${teamPrefix}chief-of-staff`, deliver: '--announce', msg: 'Morning workflow: 1. Read decisions. 2. Scan inboxes. 3. Read kanban. 4. Write shared/briefings/morning-today.md. Under 500 words.' },
+    { name: `${teamPrefix}chief-evening-brief`, cron: `0 ${eh} * * *`, agent: `${teamPrefix}chief-of-staff`, deliver: '--announce', msg: 'Evening workflow: 1. Scan inboxes. 2. Check task completion. 3. Write shared/briefings/evening-today.md. Under 500 words.' },
+    { name: `${teamPrefix}growth-daily-work`, cron: `0 ${mh+1} * * *`, agent: `${teamPrefix}growth-lead`, deliver: '--no-deliver', msg: 'Daily growth (incl GEO): 1. Read brief+inbox. 2. GEO monitoring. 3. SEO check. 4. Community scan. 5. Write to shared/.' },
+    { name: `${teamPrefix}data-daily-pull`, cron: `0 ${mh-1} * * *`, agent: `${teamPrefix}data-analyst`, deliver: '--no-deliver', msg: 'Daily data+research: 1. Check product data. 2. Scan user feedback. 3. Alert chief-of-staff on anomalies.' },
+    { name: `${teamPrefix}intel-scan`, cron: `5 ${mh-1} * * 1,3,5`, agent: `${teamPrefix}intel-analyst`, deliver: '--no-deliver', msg: 'Competitor scan: 1. Read competitor-map. 2. Search news. 3. Update map. 4. Alert on findings.' },
+    { name: `${teamPrefix}content-weekly-plan`, cron: `5 ${mh+1} * * 1`, agent: `${teamPrefix}content-chief`, deliver: '--no-deliver', msg: 'Weekly content plan: 1. Read decisions+inbox. 2. Plan this week content. 3. Start first piece.' },
   ];
 
-  // PowerShell
+  // FIX: PowerShell — call openclaw directly, no cmd /c wrapper; timeout 300s
   let ps = `# ${teamName} Cron Jobs\n\n`;
   for (const c of crons) {
-    ps += `cmd /c "openclaw cron add --name \\"${c.name}\\" --cron \\"${c.cron}\\" --tz \\"${tz}\\" --session isolated --agent ${c.agent} ${c.deliver} --exact --timeout-seconds 180 --message \\"${c.msg}\\""\n\n`;
+    ps += `openclaw cron add --name "${c.name}" --cron "${c.cron}" --tz "${tz}" --session isolated --agent ${c.agent} ${c.deliver} --exact --timeout-seconds 600 --message "${c.msg}"\n\n`;
   }
   w(path.join(workDir, 'create-crons.ps1'), ps);
 
   // Bash
   let sh = `#!/bin/bash\n# ${teamName} Cron Jobs\n\n`;
   for (const c of crons) {
-    sh += `openclaw cron add --name "${c.name}" --cron "${c.cron}" --tz "${tz}" --session isolated --agent ${c.agent} ${c.deliver} --exact --timeout-seconds 180 --message "${c.msg}"\n\n`;
+    sh += `openclaw cron add --name "${c.name}" --cron "${c.cron}" --tz "${tz}" --session isolated --agent ${c.agent} ${c.deliver} --exact --timeout-seconds 600 --message "${c.msg}"\n\n`;
   }
   w(path.join(workDir, 'create-crons.sh'), sh);
   console.log('  [OK] create-crons.ps1 + .sh');
 
   // README
-  w(path.join(workDir, 'README.md'), `# ${teamName}
-
-## Quick Start
-1. \`node apply-config.js\` -- add agents to openclaw.json
-2. Run \`create-crons.ps1\` (Windows) or \`create-crons.sh\` (Linux/Mac)
-3. \`openclaw gateway restart\`
-4. Fill in shared/decisions/active.md and shared/products/_index.md
-
-## Agents
-${ROLES.map(r => `- **${names[r.id]}** (${r.id}) -- ${r.pos} -- model: ${r.think ? tm : em}`).join('\n')}
-
-## Cron Schedule
-| Time | Agent | Task |
-|------|-------|------|
-${crons.map(c => `| ${c.cron} | ${c.agent} | ${c.name} |`).join('\n')}
-`);
+  w(path.join(workDir, 'README.md'), `# ${teamName}\n\n## Quick Start\n1. \`node apply-config.js\` -- add agents to openclaw.json\n2. Run \`create-crons.ps1\` (Windows) or \`create-crons.sh\` (Linux/Mac)\n3. \`openclaw gateway restart\`\n4. Fill in shared/decisions/active.md and shared/products/_index.md\n\n## Agents\n${prefixedRoles.map(r => `- **${names[r.id]}** (${r.pid}) -- ${r.pos} -- model: ${r.think ? tm : em}`).join('\n')}\n\n## Cron Schedule\n| Time | Agent | Task |\n|------|-------|------|\n${crons.map(c => `| ${c.cron} | ${c.agent} | ${c.name} |`).join('\n')}\n`);
   console.log('  [OK] README.md');
 
   console.log(`\n========================================`);

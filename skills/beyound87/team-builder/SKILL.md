@@ -165,8 +165,72 @@ User must edit:
 ├── agents/<7 agent dirs>/       (SOUL.md + MEMORY.md + memory/)
 └── shared/
     ├── briefings/, decisions/, inbox/
+    ├── data/                        (public data pool, data-analyst writes, all read)
     ├── kanban/, knowledge/, products/
 ```
+
+
+
+## Knowledge Governance
+
+Each shared knowledge file has a designated owner. Only the owner agent updates it; others read only.
+
+| File | Owner | Update Trigger |
+|------|-------|---------------|
+| geo-playbook.md | growth-lead | After GEO experiments/discoveries |
+| seo-playbook.md | growth-lead | After SEO experiments |
+| competitor-map.md | intel-analyst | After each competitor scan |
+| content-guidelines.md | content-chief | After proven writing patterns |
+| user-personas.md | data-analyst | After new user insights |
+| tech-standards.md | product-lead | After architecture decisions |
+
+### Update Protocol
+When updating a knowledge file, the owner must:
+1. Add a dated entry at the top: `## [YYYY-MM-DD] <what changed>`
+2. Include the reason and data evidence
+3. Never delete existing entries without CEO approval (append, don't replace)
+
+### Chief of Staff Governance
+The chief-of-staff monitors knowledge file health during weekly reviews:
+- Are files being updated regularly?
+- Any conflicting information between files?
+- Any stale entries that should be archived?
+
+## Self-Evolution Pattern
+
+Agents improve their own strategies over time through a feedback loop:
+
+```
+1. Execute task (cron or inbox triggered)
+2. Collect results (data, metrics, outcomes)
+3. Analyze: what worked vs what didn't
+4. Update knowledge files with proven strategies (with evidence)
+5. Next execution reads updated knowledge → better performance
+```
+
+This is NOT the agent randomly changing rules. Updates must be:
+- **Data-driven**: backed by metrics or concrete outcomes
+- **Incremental**: append new findings, don't rewrite everything
+- **Traceable**: dated with evidence so others can verify
+
+### What Agents Can Self-Update
+- Their own knowledge files (per ownership table above)
+- Their own MEMORY.md (lessons learned, decisions)
+- shared/data/ outputs (data-analyst only)
+
+### What Requires CEO Approval
+- shared/decisions/active.md (strategy changes)
+- Adding/removing agents or changing team architecture
+- External publishing or spending decisions
+
+## Public Data Layer
+
+The `shared/data/` directory serves as a read-only data pool for all agents:
+
+- **data-analyst** writes: daily metrics, user feedback summaries, anomaly alerts
+- **All agents** read: to inform their own decisions
+- Format: structured markdown or JSON, dated filenames (e.g., `metrics-2026-03-01.md`)
+- Retention: keep 30 days, archive older files
 
 ## Key Design Decisions
 

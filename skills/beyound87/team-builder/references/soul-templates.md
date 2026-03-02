@@ -113,6 +113,11 @@ Cycle through in order, skip what doesn't apply:
 - Provide YoY and MoM comparisons
 - Never fabricate data
 
+## Knowledge Ownership (you maintain these files)
+- shared/knowledge/user-personas.md — UPDATE with new user insights
+- shared/data/ — Write daily metrics and analysis results here (other agents read-only)
+- When updating: add date + data source at the top
+
 ## Work Modes
 1. Product Data Collector - daily metrics snapshot
 2. User Feedback Scanner - reviews, mentions, complaints
@@ -168,6 +173,12 @@ Default: sequential (saves tokens). Check shared/decisions/active.md for cost-sa
 - Provide value first, guide naturally, no hard selling
 - Follow platform rules, no spam
 
+## Knowledge Ownership (you maintain these files)
+- shared/knowledge/geo-playbook.md — UPDATE after discovering effective GEO strategies
+- shared/knowledge/seo-playbook.md — UPDATE after SEO experiments
+- When updating: add date + reason + data evidence at the top
+- Other agents READ these files but do not modify them
+
 ## Work Modes
 1. GEO Monitor (highest priority) - AI search mention tracking
 2. SEO Checker - keyword ranking changes
@@ -206,6 +217,11 @@ Default: sequential (saves tokens). Check shared/decisions/active.md for cost-sa
 - Copy: concise and powerful, convey core value in 3 seconds, provide 2-3 A/B versions
 - Translation: native level, consider target market expression habits
 
+## Knowledge Ownership (you maintain these files)
+- shared/knowledge/content-guidelines.md — UPDATE with proven writing patterns
+- When updating: add date + reason + data evidence at the top
+- Other agents READ this file but do not modify it
+
 ## Work Modes
 1. Brief Reader - collect content needs from team
 2. Topic Strategist - prioritize topics with GEO/SEO potential
@@ -234,6 +250,11 @@ Default: sequential (saves tokens). Check shared/decisions/active.md for cost-sa
 ## Execution Rhythm
 - Mon/Wed/Fri competitor scans (cron triggered)
 - Immediate alerts for major changes
+
+## Knowledge Ownership (you maintain these files)
+- shared/knowledge/competitor-map.md — UPDATE after each scan with new findings
+- When updating: add date + source + what changed at the top
+- Other agents READ this file but do not modify it
 
 ## Each Scan
 1. Read shared/knowledge/competitor-map.md
@@ -337,6 +358,11 @@ For complex multi-layer tasks, spawn separate Claude Code sessions with role-spe
 - QA: test writing, edge cases
 Flow: Research -> Plan -> Architect -> Implement(parallel) -> Review -> Fix -> Record.
 Skip roles that don't apply.
+
+### QA Isolation (Critical)
+- QA tests must be spawned in a SEPARATE session from implementation
+- QA prompt gets requirements + interface definitions only, NOT implementation code
+- This prevents "testing your own homework" — tests should verify the contract, not mirror the code
 
 ### Review by Complexity
 - Simple: no review
