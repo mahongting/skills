@@ -1,22 +1,22 @@
 ---
 name: ide-agent-kit
-description: Filesystem message bus and webhook relay for cross-IDE agent coordination
-version: 0.2.0
+description: Filesystem message bus and webhook relay for multi-agent IDE coordination. Use when agents need to share events, poll Ant Farm rooms, receive GitHub/GitLab webhooks, coordinate tasks across sessions, or run scheduled jobs. Local-first with zero network by default. Trigger on cross-agent messaging, webhook ingestion, room polling, cron scheduling, or tmux command execution.
+version: 0.4.0
 metadata:
   openclaw:
     requires:
-      bins:
-        - node
+      bins: [node]
+      env: []
+    homepage: https://github.com/ThinkOffApp/ide-agent-kit
     install:
       - kind: node
         package: ide-agent-kit
         bins: [ide-agent-kit]
-    homepage: https://github.com/ThinkOffApp/ide-agent-kit
 ---
 
 # IDE Agent Kit
 
-Filesystem-based message bus for cross-IDE agent coordination. Zero dependencies.
+Connect your IDE coding agents into real-time teams through OpenClaw. Filesystem-based message bus, room polling, automation rules, and multi-model agent coordination. Zero dependencies.
 
 ## Security Model
 
