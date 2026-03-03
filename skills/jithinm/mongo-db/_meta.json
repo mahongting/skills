@@ -1,0 +1,11 @@
+{
+  "owner": "jithinm",
+  "slug": "mongo-db",
+  "displayName": "Mongo Db Client Tool",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772512206694,
+    "commit": null
+  },
+  "history": []
+}
