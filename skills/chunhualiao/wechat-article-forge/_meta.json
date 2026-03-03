@@ -3,9 +3,15 @@
   "slug": "wechat-article-forge",
   "displayName": "WeChat Article Writer",
   "latest": {
-    "version": "2.3.3",
-    "publishedAt": 1772343737473,
-    "commit": "https://github.com/openclaw/skills/commit/ff0f07d492de6eaeb3f5c1ec4103aff0719fd6aa"
+    "version": "2.4.1",
+    "publishedAt": 1772424240526,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.3.3",
+      "publishedAt": 1772343737473,
+      "commit": "https://github.com/openclaw/skills/commit/ff0f07d492de6eaeb3f5c1ec4103aff0719fd6aa"
+    }
+  ]
 }

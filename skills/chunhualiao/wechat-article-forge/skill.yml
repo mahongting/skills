@@ -1,19 +1,18 @@
 display_name: "WeChat Article Writer"
 name: wechat-article-writer
-version: 2.3.3
+version: 2.4.1
+permissions:
+  - exec: bun (JS runtime for bundled baoyu renderer)
+  - exec: systemctl (setup only — creates wechat-preview systemd user service, port 8898)
+  - exec: python3 (preview server, publish_via_api.py)
+  - exec: curl (bun installation if not present)
+  - exec: git, gh CLI (optional — for source repo operations)
+  - filesystem: read/write ~/.wechat-article-writer/ (drafts, config, secrets path)
+  - network: WeChat Official Account API (api.weixin.qq.com) — image upload, draft creation
+  - network: Z.AI / OpenRouter API — scrapbook image generation
+  - credentials: WeChat appid+appsecret (user-supplied, path in config.json)
+  - credentials: ZAI_API_KEY or OPENROUTER_API_KEY (user-supplied env vars)
 description: End-to-end 微信公众号 article writing and publishing pipeline
-
-requires:
-  skills:
-    - article-illustrator
-  tools:
-    - web_search
-    - exec
-    - subagents
-    - browser
-  env:
-    - ZAI_API_KEY     # preferred: Z.AI image generation ($0.015/image)
-    - OPENROUTER_API_KEY  # alternative: OpenRouter image fallback
 
 triggers:
   # ── forge topic ──────────────────────────────────────────────────────────────
@@ -220,17 +219,6 @@ config:
     type: path
     default: ~/.wechat-article-writer/secrets.json
     description: Path to WeChat API credentials file containing appid and appsecret
-
-# Permissions (declared for security scanner transparency)
-permissions:
-  - exec: bash scripts/setup.sh (one-time setup — installs wenyan-cli, creates data dir)
-  - exec: bash scripts/format.sh (markdown → WeChat HTML via wenyan-cli)
-  - exec: python3 scripts/publish_via_api.py (WeChat Official Account API calls)
-  - filesystem: read/write ~/.wechat-article-writer/ (drafts, config, voice profile)
-  - filesystem: appends agent guidance to AGENTS.md and HEARTBEAT.md (setup.sh only, opt-in)
-  - network: WeChat Official Account API (api.weixin.qq.com) — image upload and draft creation
-  - network: web_search — topic research and fact-checking
-  - browser: localhost:8899 — article preview before publishing
 
 # Skill metadata
 skill_metadata:

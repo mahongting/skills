@@ -5,7 +5,7 @@
 # 自动完成:
 # 1. 创建数据目录 (~/.wechat-article-writer/)
 # 2. 安装依赖技能 (article-illustrator, wechat-publisher)
-# 3. 安装 wenyan-cli
+# 3. 安装 bun runtime + baoyu renderer deps
 # 4. 追加 AGENTS.md 规则到工作区
 # 5. 追加 HEARTBEAT.md pipeline 检查
 # 6. 验证环境变量
@@ -75,20 +75,20 @@ if ! check_skill "wechat-publisher"; then
   fi
 fi
 
-# ─── 3. wenyan-cli ──────────────────────────────────────────
+# ─── 3. bun runtime + baoyu renderer ──────────────────────
 echo ""
-echo "── 步骤 3/7: 检查 wenyan-cli"
-if command -v wenyan &>/dev/null; then
-  ok "wenyan 已安装: $(wenyan --version 2>/dev/null || echo 'version unknown')"
+echo "── 步骤 3/7: 检查 bun runtime"
+if [[ -f "$HOME/.bun/bin/bun" ]]; then
+  ok "bun already installed: $($HOME/.bun/bin/bun --version)"
 else
-  warn "wenyan 未安装 — 尝试安装..."
-  if command -v pnpm &>/dev/null; then
-    pnpm add -g @wenyan-md/cli 2>/dev/null && ok "wenyan 已安装" || fail "安装失败"
-  elif command -v npm &>/dev/null; then
-    npm install -g @wenyan-md/cli 2>/dev/null && ok "wenyan 已安装" || fail "安装失败"
-  else
-    fail "请手动安装: npm install -g @wenyan-md/cli"
-  fi
+  warn "bun not found — install from https://bun.sh then re-run setup"
+fi
+export PATH="$HOME/.bun/bin:$PATH"
+
+RENDERER_MD="$SKILL_DIR/scripts/renderer/md"
+if [[ -f "$RENDERER_MD/package.json" ]]; then
+  (cd "$RENDERER_MD" && "$HOME/.bun/bin/bun" install --frozen-lockfile --silent 2>/dev/null) && ok "renderer deps installed" || warn "run: cd $RENDERER_MD && bun install"
+fi
 fi
 
 # ─── 4. AGENTS.md 规则 ──────────────────────────────────────
@@ -110,7 +110,7 @@ else
 - 生成初稿（spawn Writer 子代理，用 Opus 模型）
 - 评审打分（spawn Reviewer 子代理，用 Sonnet 模型）
 - 自动修改循环（最多2轮）
-- wenyan 排版 + HTML 后处理
+- baoyu renderer 排版 (scripts/renderer/, default 主题)
 - 启动预览服务器
 
 ### 必须等人确认

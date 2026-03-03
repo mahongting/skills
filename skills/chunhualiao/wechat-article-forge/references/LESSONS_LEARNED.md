@@ -233,3 +233,137 @@ for attempt in range(6):
 - [ ] Title ≤ 18 Chinese chars?
 - [ ] Author ≤ 2 Chinese chars (or ≤ 4 ASCII chars)?
 - [ ] Using `ensure_ascii=False` in JSON encoding?
+
+---
+
+## 2026-03-01: 预览服务器 (Preview Server) **(both platforms)**
+
+### Problem: 预览链接反复打不开 — 临时服务器反复挂掉
+
+**症状：** 每次调用 `format.sh` 后发一个预览链接，用户反映链接打不开；重启后能用，下次又不行。在整个写作流程里发生了十数次。
+
+**根本原因：** 预览服务器是在 exec 命令里用 `&` 启动的，每次都是重新 kill 然后重启。问题有三层：
+1. **不稳定生命周期** — 服务器作为 exec shell 的子进程启动，exec 会话结束后偶尔被杀死
+2. **人工介入依赖** — 每次 `format.sh` 之后都要手动重启服务器，忘记或者时序不对就没法访问
+3. **端口绑定方式** — 绑到了具体的 Tailscale IP (`<your-tailscale-ip>`) 而非 `0.0.0.0`，IP 变动就挂
+
+**错误做法（不要这样做）：**
+```bash
+# ❌ 每次 format 后 kill + 重启
+kill $(lsof -ti:8898) 2>/dev/null
+python3 -m http.server 8898 --bind <your-tailscale-ip> &
+```
+
+**正确做法：做成 systemd 用户服务，永久运行，自动重启。**
+
+**一次性设置步骤：**
+
+1. 创建服务器脚本 `~/.wechat-article-writer/preview_server.py`：
+```python
+#!/usr/bin/env python3
+import http.server, os
+
+SERVE_DIR = os.path.expanduser("~/.wechat-article-writer/drafts/wechat-article-writer-deep-dive")
+PORT = 8898
+
+class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        super().end_headers()
+    def log_message(self, fmt, *args):
+        pass
+
+os.chdir(SERVE_DIR)
+http.server.HTTPServer(("0.0.0.0", PORT), NoCacheHandler).serve_forever()
+```
+
+2. 创建 systemd 服务 `~/.config/systemd/user/wechat-preview.service`：
+```ini
+[Unit]
+Description=WeChat Article Preview Server (port 8898)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 $HOME/.wechat-article-writer/preview_server.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+```
+
+3. 启用并启动：
+```bash
+systemctl --user daemon-reload
+systemctl --user enable wechat-preview.service
+systemctl --user start wechat-preview.service
+```
+
+4. 验证：
+```bash
+systemctl --user status wechat-preview.service
+curl -I http://<your-tailscale-ip>:8898/formatted.html
+```
+
+**服务特性：**
+- 绑定 `0.0.0.0:8898`（所有网口，包括 Tailscale）
+- `Cache-Control: no-store, no-cache` — 每次 format 后直接刷新即可，无需 hard refresh
+- `Restart=always` — 崩溃自动重启，无需人工干预
+- `enabled` — 开机自启
+
+**format.sh 的正确做法：**
+- format.sh **不得** kill 或重启预览服务器
+- format.sh 输出的 HTML 里有 "Preview build" 时间戳，配合 no-cache 头，浏览器直接刷新即可看到最新内容
+
+**诊断命令（当链接打不开时）：**
+```bash
+# 1. 服务还在吗？
+systemctl --user status wechat-preview.service
+
+# 2. 端口在监听吗？
+ss -tlnp | grep 8898
+
+# 3. 本地可达吗？
+curl -I http://<your-tailscale-ip>:8898/formatted.html
+
+# 4. 如果服务挂了，重启：
+systemctl --user restart wechat-preview.service
+```
+
+**Lesson：** 任何需要"持续可访问"的 HTTP 服务，必须用 systemd 服务管理，不能用 exec 临时启动。exec 进程生命周期不可预测，不适合做服务基础设施。
+
+---
+
+## 2026-03-01: 排版主题 (wenyan Theme) **(both platforms)**
+
+### Problem: 默认主题太素，公众号效果差
+
+**症状：** format.sh 生成的预览和发布到微信的文章排版很平淡，没有视觉层次感。
+
+**根本原因：** format.sh 调用 `wenyan render` 时没有传 `-t` 参数，永远使用 `default` 主题（最素的）。`skill.yml` 里有 `default_theme: condensed` 配置，但 format.sh 完全没读取它；而且 `condensed` 根本不是合法的 wenyan 主题。
+
+**wenyan 可用主题：**
+```
+default        — 极简，几乎没有样式（不推荐）
+pie            — sspai 风格，现代精致，适合科技/深度内容 ✅ 推荐
+lapis          — 蓝调极简，清爽
+orangeheart    — 暖橙，适合情感/生活类内容
+rainbow        — 彩色活泼
+maize          — 柔和麦色
+purple         — 紫色简约
+phycat         — 薄荷绿，结构清晰
+```
+
+**修复：**
+```bash
+# format.sh 现在默认使用 pie 主题
+cat "$DRAFT_PATH" | wenyan render -t pie > "$RAW_HTML"
+
+# 也可以在调用时传主题参数
+bash format.sh <draft-dir> draft-v4.md lapis
+```
+
+**Lesson：** 排版工具的默认选项往往是最保守的，不代表最佳选择。新部署时应明确测试 2-3 个主题，选出最适合内容调性的，写入 format.sh 默认值。
+
