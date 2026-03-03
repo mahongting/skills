@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Deploy safety: `deploy.sh` now requires explicit opt-in for runtime downloads and for starting containers.
+- Deploy safety: fallback download path prints a review checklist before start.
+
 ## 0.1.3
 
 - Metadata compatibility: duplicate required/optional env var declarations at top-level (`env`) and `metadata.env` to ensure registry/security scanners display them.

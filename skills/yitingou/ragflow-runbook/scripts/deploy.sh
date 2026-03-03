@@ -4,22 +4,43 @@
 # Goal:
 # - Prefer a robust install path using `git clone`.
 # - Fall back to downloading upstream docker assets if git is not available.
+# - Default-safe: do not start containers unless explicitly allowed.
 #
 # Usage:
 #   bash deploy.sh [deploy_root]
 #
-# Output:
-# - Creates/uses a directory that contains the upstream `docker/` folder.
-# - Starts RAGFlow via `docker compose up -d` from inside that `docker/` folder.
+# Opt-in switches:
+# - To allow network download + writing upstream files:
+#     export RAGFLOW_RUNBOOK_ALLOW_DOWNLOAD=1
+# - To allow starting services (docker compose up -d):
+#     export RAGFLOW_RUNBOOK_ALLOW_START=1
+#
+# Notes:
+# - In production, review downloaded upstream files before starting.
 
 set -euo pipefail
 
 DEPLOY_ROOT=${1:-"./ragflow"}
 
-echo "=========================================="
-echo "           RAGFlow Deploy"
-echo "=========================================="
-echo
+ALLOW_DOWNLOAD=${RAGFLOW_RUNBOOK_ALLOW_DOWNLOAD:-""}
+ALLOW_START=${RAGFLOW_RUNBOOK_ALLOW_START:-""}
+
+need_opt_in() {
+  local what="$1"
+  local var="$2"
+  echo "ERROR: $what is disabled by default."
+  echo "Set $var=1 to proceed."
+  return 2
+}
+
+header() {
+  echo "=========================================="
+  echo "           RAGFlow Deploy"
+  echo "=========================================="
+  echo
+}
+
+header
 
 echo "1) System checks"
 if command -v docker >/dev/null 2>&1; then
@@ -75,7 +96,11 @@ if [[ $have_git -eq 1 ]]; then
   fi
 
 else
-  echo "3) Git not found; falling back to downloading upstream docker assets"
+  echo "3) Git not found; fallback download path"
+
+  if [[ "$ALLOW_DOWNLOAD" != "1" ]]; then
+    need_opt_in "Downloading upstream files" "RAGFLOW_RUNBOOK_ALLOW_DOWNLOAD" || exit $?
+  fi
 
   UPSTREAM_DIR="$DEPLOY_ROOT/ragflow"
   DOCKER_DIR="$UPSTREAM_DIR/docker"
@@ -119,6 +144,13 @@ else
   done
 
   cd "$DOCKER_DIR"
+
+  echo
+  echo "Downloaded upstream files. Review before starting (recommended for production):"
+  echo "  - $DOCKER_DIR/docker-compose.yml"
+  echo "  - $DOCKER_DIR/docker-compose-base.yml"
+  echo "  - $DOCKER_DIR/.env"
+  echo "  - $DOCKER_DIR/nginx/*"
 fi
 
 echo
@@ -139,6 +171,10 @@ fi
 echo
 
 echo "5) Start services"
+if [[ "$ALLOW_START" != "1" ]]; then
+  need_opt_in "Starting containers" "RAGFLOW_RUNBOOK_ALLOW_START" || exit $?
+fi
+
 docker compose up -d
 
 echo
@@ -155,7 +191,6 @@ echo
 
 echo "Next steps:"
 echo "- Check liveness: curl -sS http://127.0.0.1:9380/openapi.json (adjust host/port if needed)"
-echo "- Or use this skill's helpers: scripts/ragflow_ping.py / scripts/ragflow_smoke.py"
 
 echo
 

@@ -1,6 +1,6 @@
 ---
 name: ragflow-runbook
-version: 0.1.3
+version: 0.1.4
 description: End-to-end runbook for deploying, operating, troubleshooting, and monitoring RAGFlow (runtime ops only).
 
 # Compatibility: some registries/security scanners only detect env vars if they are declared

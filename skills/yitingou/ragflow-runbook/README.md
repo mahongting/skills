@@ -2,7 +2,7 @@
 
 Runtime operations runbook for RAGFlow: deploy, operate, troubleshoot, monitor.
 
-Version: 0.1.3
+Version: 0.1.4
 
 ---
 
@@ -31,10 +31,19 @@ Not included:
 
 ## Quick Start
 
-Deploy (preferred path: git clone):
+Deploy (preferred path: git clone).
+
+By default, `deploy.sh` will NOT start containers unless you opt in:
 
 ```bash
+# Prepare files (git clone path may still run; starting containers is disabled by default)
 bash skills/ragflow-runbook/scripts/deploy.sh /opt/ragflow
+
+# Explicitly allow starting containers
+RAGFLOW_RUNBOOK_ALLOW_START=1 bash skills/ragflow-runbook/scripts/deploy.sh /opt/ragflow
+
+# If git is not available and you want to allow runtime downloads
+RAGFLOW_RUNBOOK_ALLOW_DOWNLOAD=1 RAGFLOW_RUNBOOK_ALLOW_START=1 bash skills/ragflow-runbook/scripts/deploy.sh /opt/ragflow
 ```
 
 Set env vars (adjust host/port):
