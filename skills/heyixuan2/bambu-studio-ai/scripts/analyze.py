@@ -25,9 +25,18 @@ def auto_orient(mesh):
         best_transform = None
 
         # Try principal orientations + stable poses
-        # Method 1: Use trimesh's stable poses if available
+        # Method 1: Use trimesh's stable poses (decimate first if too large)
         try:
-            transforms, probs = trimesh.poses.compute_stable_poses(mesh, n_samples=50)
+            orient_mesh = mesh
+            if len(mesh.faces) > 500000:
+                print(f"   Large mesh ({len(mesh.faces):,} faces) — using decimated proxy for orientation...")
+                try:
+                    orient_mesh = mesh.simplify_quadric_decimation(100000)
+                    if orient_mesh is None or len(orient_mesh.faces) == 0:
+                        orient_mesh = mesh
+                except:
+                    orient_mesh = mesh
+            transforms, probs = trimesh.poses.compute_stable_poses(orient_mesh, n_samples=50)
             for i, (T, p) in enumerate(zip(transforms, probs)):
                 candidate = mesh.copy()
                 candidate.apply_transform(T)
@@ -481,6 +490,7 @@ def main():
                         help="Purpose affects infill/wall recommendations")
     parser.add_argument("--render", action="store_true", help="Render preview images")
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
+    parser.add_argument("--height", type=float, default=0, help="Target height in mm (auto-scale model)")
     parser.add_argument("--orient", action="store_true", help="Auto-orient for optimal print position")
     parser.add_argument("--repair", action="store_true", help="Auto-repair non-manifold mesh before analysis")
     parser.add_argument("--output-dir", default=".", help="Directory for rendered images")
@@ -511,6 +521,32 @@ def main():
         print(f"ERROR: Failed to load '{args.file}': {e}", file=sys.stderr)
         sys.exit(1)
 
+    # Auto-detect units: glTF models are in meters, need conversion to mm
+    bounds = mesh.bounds
+    if bounds is None:
+        print("❌ Cannot determine model dimensions. File may be corrupt.")
+        sys.exit(1)
+    max_dim = max(bounds[1] - bounds[0])
+    if max_dim < 10:  # Likely in meters (glTF standard)
+        print(f"📐 Detected meter-scale model (max dimension: {max_dim:.3f}m)")
+        mesh.apply_scale(1000)  # Convert to mm
+        print(f"   Converted to mm: {(mesh.bounds[1] - mesh.bounds[0])[0]:.1f} × {(mesh.bounds[1] - mesh.bounds[0])[1]:.1f} × {(mesh.bounds[1] - mesh.bounds[0])[2]:.1f} mm")
+
+    # Auto-scale if target height specified
+    if args.height and args.height > 0:
+        bounds = mesh.bounds
+        current_h = (bounds[1][2] - bounds[0][2])
+        # Tripo models are in ~1 unit scale, detect if too small
+        current_h_mm = current_h * 1000 if current_h < 1 else current_h
+        if current_h_mm < 1:
+            current_h_mm = current_h * 1000
+        scale = args.height / current_h_mm
+        mesh.apply_scale(scale)
+        print(f"📏 Scaled to {args.height}mm height (scale factor: {scale:.2f}x)")
+        bounds = mesh.bounds
+        dims = bounds[1] - bounds[0]
+        print(f"   New dimensions: {dims[0]:.1f} × {dims[1]:.1f} × {dims[2]:.1f} mm")
+
     # Auto-orient if requested
     if args.orient:
         mesh = auto_orient(mesh)
@@ -518,6 +554,9 @@ def main():
         orient_path = os.path.splitext(args.file)[0] + "_oriented" + os.path.splitext(args.file)[1]
         mesh.export(orient_path)
         print(f"📁 Oriented model: {orient_path}")
+
+    # ─── Run analysis on ORIGINAL mesh first ───
+    original_mesh = mesh.copy()
 
     # Tiered repair: don't over-process good models
     has_holes = not mesh.is_watertight
@@ -575,4 +614,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n⏹️ Cancelled.")
+    except SystemExit:
+        pass
+    except Exception as e:
+        print(f"❌ Analysis failed: {e}")
+        print(f"   Try opening the model in Bambu Studio directly — it has built-in repair.")

@@ -151,6 +151,16 @@ if args.height > 0:
         z_min2 = min(v.z for v in bbox2)
         obj.location.z -= z_min2
 
+# ─── Pre-subdivide decimation (prevent giant OBJ files) ───
+face_count = len(obj.data.polygons)
+if face_count > 200000 and args.subdivide >= 2:
+    target_ratio = 100000 / face_count
+    print(f"\n⚡ Pre-decimation: {face_count:,} faces → ~100K (prevents >500MB output)")
+    mod = obj.modifiers.new('Decimate', 'DECIMATE')
+    mod.ratio = target_ratio
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+    print(f"   Result: {len(obj.data.polygons):,} faces")
+
 # ─── Subdivide ───
 if args.subdivide > 0:
     mod = obj.modifiers.new("Subdivide", 'SUBSURF')
@@ -185,58 +195,79 @@ else:
     w, h = image.size
     print(f"Texture: {w}x{h} ({len(pixels)} pixels)")
 
-    # ─── Step 1: Delight (remove baked shadows) ───
-    print(f"\n🔆 Step 1: Delight (floor={args.delight_floor}, bright={args.delight_bright}, sat={args.delight_sat})")
+    # ─── Step 1: Delight (remove baked shadows) — vectorized ───
+    # Smart delight: if dark filaments exist, reduce floor to preserve dark regions
+    effective_floor = args.delight_floor
+    dark_filaments = [i for i, c in enumerate(filament_colors) if max(c) < 0.3]
+    if dark_filaments:
+        effective_floor = min(args.delight_floor, 0.3)
+        print(f"\n🔆 Step 1: Delight (floor adjusted {args.delight_floor}→{effective_floor} — dark filament detected)")
+    else:
+        print(f"\n🔆 Step 1: Delight (floor={args.delight_floor}, bright={args.delight_bright}, sat={args.delight_sat})")
     delit = pixels.copy()
-    for i in range(len(delit)):
-        r, g, b = delit[i]
-        h_val, s, v = colorsys.rgb_to_hsv(r, g, b)
-        # Boost brightness and saturation, clamp
-        v = min(max(v * args.delight_bright, args.delight_floor), 1.0)
-        s = min(s * args.delight_sat, 1.0)
-        delit[i] = colorsys.hsv_to_rgb(h_val, s, v)
-    print(f"   Delight applied to {len(delit)} pixels")
+    # Vectorized HSV conversion
+    r_ch, g_ch, b_ch = delit[:, 0], delit[:, 1], delit[:, 2]
+    maxc = np.maximum(np.maximum(r_ch, g_ch), b_ch)
+    minc = np.minimum(np.minimum(r_ch, g_ch), b_ch)
+    v = maxc
+    s = np.where(maxc > 0, (maxc - minc) / (maxc + 1e-10), 0)
+    # Boost brightness and saturation
+    v = np.clip(v * args.delight_bright, effective_floor, 1.0)
+    s = np.clip(s * args.delight_sat, 0, 1.0)
+    # Convert back to RGB (simplified: adjust original pixels by brightness ratio)
+    old_v = maxc + 1e-10
+    ratio = v / old_v
+    delit = delit * ratio[:, np.newaxis]
+    delit = np.clip(delit, 0, 1)
+    print(f"   Delight applied to {len(delit)} pixels (vectorized)")
 
-    # ─── Step 2: CIELAB K-means clustering ───
+    # ─── Step 2: CIELAB K-means clustering — vectorized ───
     print(f"\n🎯 Step 2: K-means clustering ({args.clusters} clusters in CIELAB)")
 
-    # Convert delit pixels to Lab
-    pixel_lab = np.zeros((len(delit), 3))
-    for i in range(len(delit)):
-        pixel_lab[i] = rgb_to_lab(*delit[i])
+    # Batch RGB→Lab conversion (vectorized)
+    def batch_rgb_to_lab(rgb):
+        """Vectorized sRGB→CIELAB for numpy array (N,3)."""
+        # Linearize sRGB
+        linear = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+        # Linear RGB → XYZ (D65)
+        M = np.array([[0.4124564, 0.3575761, 0.1804375],
+                       [0.2126729, 0.7151522, 0.0721750],
+                       [0.0193339, 0.1191920, 0.9503041]])
+        xyz = linear @ M.T
+        # Normalize
+        xyz[:, 0] /= 0.95047
+        xyz[:, 2] /= 1.08883
+        # XYZ → Lab
+        mask = xyz > 0.008856
+        xyz_f = np.where(mask, xyz ** (1/3), 7.787 * xyz + 16/116)
+        L = 116 * xyz_f[:, 1] - 16
+        a = 500 * (xyz_f[:, 0] - xyz_f[:, 1])
+        b_val = 200 * (xyz_f[:, 1] - xyz_f[:, 2])
+        return np.column_stack([L, a, b_val])
 
-    # Simple K-means (no sklearn dependency)
-    n_clusters = min(args.clusters, len(set(map(tuple, delit.round(2)))))
-    # Init centroids: random sample
+    pixel_lab = batch_rgb_to_lab(delit)
+
+    # Vectorized K-means
+    n_clusters = min(args.clusters, len(np.unique(delit.round(2), axis=0)))
     rng = np.random.RandomState(42)
     idx = rng.choice(len(pixel_lab), size=n_clusters, replace=False)
     centroids = pixel_lab[idx].copy()
 
     labels = np.zeros(len(pixel_lab), dtype=np.int32)
     for iteration in range(20):
-        # Assign
-        for i in range(len(pixel_lab)):
-            best_c = 0
-            best_d = float('inf')
-            for c in range(n_clusters):
-                d = sum((pixel_lab[i][j] - centroids[c][j]) ** 2 for j in range(3))
-                if d < best_d:
-                    best_d = d
-                    best_c = c
-            labels[i] = best_c
+        # Vectorized distance: (N, 1, 3) - (1, K, 3) → (N, K)
+        diffs = pixel_lab[:, np.newaxis, :] - centroids[np.newaxis, :, :]
+        dists = np.sum(diffs ** 2, axis=2)
+        labels = np.argmin(dists, axis=1)
         # Update centroids
         new_centroids = np.zeros_like(centroids)
         counts = np.zeros(n_clusters)
-        for i in range(len(pixel_lab)):
-            new_centroids[labels[i]] += pixel_lab[i]
-            counts[labels[i]] += 1
-        changed = 0
-        for c in range(n_clusters):
-            if counts[c] > 0:
-                new_c = new_centroids[c] / counts[c]
-                if sum((new_c[j] - centroids[c][j]) ** 2 for j in range(3)) > 0.01:
-                    changed += 1
-                centroids[c] = new_c
+        np.add.at(new_centroids, labels, pixel_lab)
+        np.add.at(counts, labels, 1)
+        mask = counts > 0
+        new_centroids[mask] /= counts[mask, np.newaxis]
+        changed = np.sum(np.sum((new_centroids - centroids) ** 2, axis=1) > 0.01)
+        centroids = new_centroids
         if changed == 0:
             break
     print(f"   K-means converged in {iteration+1} iterations")
@@ -255,20 +286,24 @@ else:
         pct = count / len(quantized) * 100
         print(f"   Filament {fi+1}: {count} pixels ({pct:.1f}%)")
 
-    # ─── Step 3: Texture-space smoothing (mode filter) ───
+    # ─── Step 3: Texture-space smoothing — vectorized mode filter ───
     print(f"\n🔄 Step 3: Texture smoothing (window={args.tex_smooth}, passes={args.tex_smooth_passes})")
     q_2d = quantized.reshape(h, w)
     half = args.tex_smooth // 2
 
     for pass_i in range(args.tex_smooth_passes):
+        # Pad array for uniform window access
+        padded = np.pad(q_2d, half, mode='edge')
         new_q = q_2d.copy()
         changed = 0
+        # Process in chunks of rows for memory efficiency
         for y in range(h):
+            # Extract all windows for this row at once
+            row_windows = np.array([padded[y:y+args.tex_smooth, x:x+args.tex_smooth].flatten()
+                                     for x in range(w)])
+            # Vectorized bincount per row
             for x in range(w):
-                y0, y1 = max(0, y - half), min(h, y + half + 1)
-                x0, x1 = max(0, x - half), min(w, x + half + 1)
-                window = q_2d[y0:y1, x0:x1].flatten()
-                votes = np.bincount(window, minlength=n_colors)
+                votes = np.bincount(row_windows[x], minlength=n_colors)
                 winner = np.argmax(votes)
                 if winner != q_2d[y, x]:
                     new_q[y, x] = winner
@@ -440,12 +475,27 @@ def find_blender():
     return None
 
 
+def _validate_colors(colors_str):
+    """Validate hex color string."""
+    import re
+    colors = [c.strip() for c in colors_str.split(",")]
+    for c in colors:
+        if not re.match(r'^#?[0-9A-Fa-f]{6}$', c):
+            print(f"❌ Invalid color: '{c}'. Use hex format: #FF0000,#00FF00,#0000FF")
+            return None
+    return colors_str
+
+
 def colorize(input_path, output_path, colors, height=0, subdivide=2,
              min_island=50, cleanup=3, clusters=16, tex_smooth=9,
              tex_smooth_passes=5, delight_floor=0.7, delight_bright=2.0,
              delight_sat=1.5):
     """Convert GLB to multi-color OBJ+MTL using full pipeline."""
     blender = find_blender()
+    # Validate colors first
+    if not _validate_colors(colors):
+        return None
+
     if not blender:
         print("❌ Blender not found.")
         print("   Install: brew install --cask blender")
@@ -485,7 +535,7 @@ def colorize(input_path, output_path, colors, height=0, subdivide=2,
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
         for line in result.stdout.split('\n'):
             line = line.strip()
             if line and (line.startswith(('Mesh:', 'Texture:', 'Filament', '✅', '📋', '📐', '🔆', '🎯', '🔄', '🧹', '🏝', '  ')) or 'ERROR' in line or 'WARNING' in line):
