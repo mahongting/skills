@@ -3,9 +3,15 @@
   "slug": "astock-data",
   "displayName": "Astock Data",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1772451218987,
-    "commit": "https://github.com/openclaw/skills/commit/7a6cfe2deace97613f44514d79e52742a111a038"
+    "version": "1.7.0",
+    "publishedAt": 1772455152065,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1772451218987,
+      "commit": "https://github.com/openclaw/skills/commit/7a6cfe2deace97613f44514d79e52742a111a038"
+    }
+  ]
 }
