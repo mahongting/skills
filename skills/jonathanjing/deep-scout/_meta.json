@@ -1,13 +1,18 @@
 {
   "owner": "jonathanjing",
   "slug": "deep-scout",
-  "displayName": "Deep Scout",
+  "displayName": "deep-scout",
   "latest": {
-    "version": "0.1.3",
-    "publishedAt": 1772486816977,
-    "commit": "https://github.com/openclaw/skills/commit/d37d91ab6f1b65972740b2d7c7ccc71a17377ac5"
+    "version": "0.1.4",
+    "publishedAt": 1772584418839,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.3",
+      "publishedAt": 1772486816977,
+      "commit": "https://github.com/openclaw/skills/commit/d37d91ab6f1b65972740b2d7c7ccc71a17377ac5"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1772250339779,

@@ -1,13 +1,25 @@
 ---
 name: deep-scout
 description: "Multi-stage deep intelligence pipeline (Search → Filter → Fetch → Synthesize). Turns a query into a structured research report with full source citations."
+version: "0.1.4"
 metadata:
   {"openclaw": {"requires": {"bins": ["bash", "python3"], "anyBins": ["timeout", "gtimeout"]}}}
 ---
 
-# Deep Scout: Multi-Stage Intelligence Pipeline
+# deep-scout
 
-Search → Filter → Fetch → Synthesize. Turns a natural-language query into a structured research report with full source citations.
+Multi-stage deep intelligence pipeline (Search → Filter → Fetch → Synthesize).
+
+## 🛠️ Installation
+
+### 1. Ask OpenClaw (Recommended)
+Tell OpenClaw: *"Install the deep-scout skill."* The agent will handle the installation and configuration automatically.
+
+### 2. Manual Installation (CLI)
+If you prefer the terminal, run:
+```bash
+clawhub install deep-scout
+```
 
 ## 🚀 Usage
 

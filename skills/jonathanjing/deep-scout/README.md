@@ -1,13 +1,14 @@
-# Deep Scout 🛰️
+# deep-scout 🛰️
 
-A multi-stage intelligence pipeline for OpenClaw. It performs deep web research by escalating through a tiered toolchain: Search → Filter → Fetch (Fast/Deep/Browser) → Synthesize.
+Multi-stage deep intelligence pipeline (Search → Filter → Fetch → Synthesize).
 
-## 🚀 One-Step Install
+## 🛠️ Installation
 
-If you are running OpenClaw, just say to your agent:
-> "Install the Deep Scout skill"
+### 1. Ask OpenClaw (Recommended)
+Tell OpenClaw: *"Install the deep-scout skill."* The agent will handle the installation and configuration automatically.
 
-Or manually:
+### 2. Manual Installation (CLI)
+If you prefer the terminal, run:
 ```bash
 clawhub install deep-scout
 ```
