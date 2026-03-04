@@ -1,0 +1,9 @@
+{
+  "name": "aicoin-skill",
+  "version": "1.3.2",
+  "private": true,
+  "type": "module",
+  "optionalDependencies": {
+    "ccxt": "^4"
+  }
+}
