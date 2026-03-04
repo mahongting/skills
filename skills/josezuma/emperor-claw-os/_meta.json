@@ -1,13 +1,18 @@
 {
   "owner": "josezuma",
   "slug": "emperor-claw-os",
-  "displayName": "Emperor Claw Os",
+  "displayName": "Emperor Claw OS",
   "latest": {
-    "version": "v1.3.9",
-    "publishedAt": 1772470636291,
-    "commit": "https://github.com/openclaw/skills/commit/f3488dd7241256749937cef7ac73d77d61fb2f42"
+    "version": "1.4.0",
+    "publishedAt": 1772620770751,
+    "commit": null
   },
   "history": [
+    {
+      "version": "v1.3.9",
+      "publishedAt": 1772470636291,
+      "commit": "https://github.com/openclaw/skills/commit/f3488dd7241256749937cef7ac73d77d61fb2f42"
+    },
     {
       "version": "1.3.2",
       "publishedAt": 1772405806274,
