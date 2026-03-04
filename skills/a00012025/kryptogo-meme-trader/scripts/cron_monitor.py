@@ -8,7 +8,6 @@ import sys
 import os
 import json
 import subprocess
-from dotenv import load_dotenv
 
 # Add parent directory to path so we can import 'examples.trading-workflow' or similar
 # The trading-workflow.py is in ../examples/ relative to this script
@@ -19,13 +18,10 @@ WORKFLOW_PATH = os.path.join(EXAMPLES_DIR, "trading-workflow.py")
 
 sys.path.append(EXAMPLES_DIR)
 
-# Load env vars
-env_path = os.path.expanduser("~/.openclaw/workspace/.env")
-load_dotenv(env_path)
-
+# Credentials must be pre-loaded in the environment (source ~/.openclaw/workspace/.env)
 # Verify critical env vars
 if not os.getenv("KRYPTOGO_API_KEY") or not os.getenv("SOLANA_WALLET_ADDRESS"):
-    print("ERROR: Missing KRYPTOGO_API_KEY or SOLANA_WALLET_ADDRESS in .env")
+    print("ERROR: Missing KRYPTOGO_API_KEY or SOLANA_WALLET_ADDRESS. Run 'source ~/.openclaw/workspace/.env' first.")
     sys.exit(1)
 
 # Monkey-patch safe_execute_trade to use swap.py
@@ -66,14 +62,17 @@ def patched_safe_execute_trade(input_mint, output_mint, amount, slippage_bps=300
                 headers=headers
             )
             data = resp.json()
-            decimals = data.get("decimals", 6)
+            decimals = data.get("decimals")
+            if decimals is None:
+                print(f"ABORT: Could not determine decimals for {token_mint}. Refusing to sell with unknown precision.")
+                return None
             human_amount = amount / (10 ** decimals)
-            
+
             cmd.extend([token_mint, str(human_amount), "--sell"])
             print(f"Executing SELL: {human_amount} tokens ({amount} raw) -> SOL")
-            
+
         except Exception as e:
-            print(f"Error fetching decimals for sell: {e}. Aborting trade.")
+            print(f"ABORT: Failed to fetch decimals for sell: {e}.")
             return None
 
     else:

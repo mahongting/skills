@@ -2,13 +2,17 @@
 import json
 import os
 import subprocess
+import sys
 import requests
-from dotenv import load_dotenv
 
-# Load env
-load_dotenv(os.path.expanduser("~/.openclaw/workspace/.env"))
+# Credentials must be pre-loaded in the environment (source ~/.openclaw/workspace/.env)
 API_KEY = os.environ.get("KRYPTOGO_API_KEY")
 WALLET = os.environ.get("SOLANA_WALLET_ADDRESS")
+
+if not API_KEY or not WALLET:
+    print("ERROR: Missing KRYPTOGO_API_KEY or SOLANA_WALLET_ADDRESS.")
+    print("Run 'source ~/.openclaw/workspace/.env' before running this script.")
+    sys.exit(1)
 
 # Config
 PREFS_PATH = os.path.expanduser("~/.openclaw/workspace/memory/trading-preferences.json")

@@ -20,13 +20,15 @@ Examples:
   # Custom slippage (basis points, default: 300 = 3%)
   python3 scripts/swap.py So11...token_mint_address 0.1 --slippage 500
 
-Environment (from ~/.openclaw/workspace/.env):
+Environment (must be sourced before running):
   KRYPTOGO_API_KEY       - API key for authentication
   SOLANA_WALLET_ADDRESS  - Agent wallet public address
   SOLANA_PRIVATE_KEY     - Agent wallet private key (base58, never sent to server)
 
 SECURITY:
-  - Private key is loaded from .env and used ONLY for local signing
+  - This script does NOT read .env directly. Credentials must be loaded into
+    the environment by the caller (e.g., `source ~/.openclaw/workspace/.env`).
+  - Private key is used ONLY for local signing
   - Key is never sent to any server or logged to output
   - Transaction is signed locally with `solders` library
 """
@@ -41,7 +43,6 @@ import datetime
 from decimal import Decimal, getcontext
 
 import requests
-from dotenv import load_dotenv
 
 # Set decimal precision high enough for crypto
 getcontext().prec = 28
@@ -49,8 +50,6 @@ getcontext().prec = 28
 # ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
-
-load_dotenv(os.path.expanduser("~/.openclaw/workspace/.env"))
 
 API_BASE = "https://wallet-data.kryptogo.app"
 API_KEY = os.environ.get("KRYPTOGO_API_KEY")
@@ -60,7 +59,7 @@ PRIVATE_KEY = os.environ.get("SOLANA_PRIVATE_KEY")
 SOL_MINT = "So11111111111111111111111111111112"
 
 if not all([API_KEY, WALLET, PRIVATE_KEY]):
-    sys.exit("ERROR: Missing required env vars. Run scripts/setup.py first.")
+    sys.exit("ERROR: Missing required env vars. Run 'source ~/.openclaw/workspace/.env' before running this script.")
 
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
@@ -118,13 +117,15 @@ except Exception as e:
     print(f"Warning: Could not fetch token info: {e}")
 
 token_symbol = token_info.get("symbol", "UNKNOWN")
-decimals = token_info.get("decimals", 6)
+decimals = token_info.get("decimals")
 current_price = token_info.get("price", 0)
 
 # Use Decimal for precise arithmetic
 amount_dec = Decimal(args.amount)
 
 if args.sell:
+    if decimals is None:
+        sys.exit("ABORT: Could not determine token decimals. Refusing to sell with unknown precision.")
     input_mint = args.token_mint
     output_mint = SOL_MINT
     # Exact calculation: amount * 10^decimals
@@ -177,7 +178,7 @@ try:
     quote = swap_data.get("quote", {})
     # Look for outAmount in quote (structure varies, usually outAmount or amount_out)
     raw_out = quote.get("outAmount") or quote.get("amount_out") or quote.get("out_amount")
-    if raw_out:
+    if raw_out and decimals is not None:
         estimated_out_amount = float(raw_out) / (10 ** decimals)
 except Exception:
     pass

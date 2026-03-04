@@ -823,22 +823,18 @@ def execute_exit(mint, symbol, action, reason, pnl_pct, pnl_sol, holding_hours):
     token_balance = 0
     for token in portfolio.get("tokens", []):
         if token["mint"] == mint:
-            # Use raw_balance if available, otherwise assume balance is UI amount and we need decimals
-            # For now, let's look for a raw balance field or fetch token info to get decimals
-            
-            # 1. Try to get raw balance directly if the API provides it (it usually doesn't standardly)
+            # Use raw_balance if available, otherwise fetch decimals to convert UI balance
             if "raw_balance" in token:
                  token_balance = int(token["raw_balance"])
             else:
-                # 2. Fetch decimals to convert UI balance to raw units
-                try:
-                     overview = get_token_overview(mint)
-                     decimals = overview.get("decimals", 6) # Default to 6 if missing, but risky
-                     ui_balance = float(token.get("balance", 0))
-                     token_balance = int(ui_balance * (10 ** decimals))
-                except Exception as e:
-                     print(f"Error fetching decimals for {symbol}: {e}. Defaulting to int(balance) which is likely WRONG.")
-                     token_balance = int(float(token.get("balance", 0)))
+                # Fetch decimals to convert UI balance to raw units
+                overview = get_token_overview(mint)
+                decimals = overview.get("decimals")
+                if decimals is None:
+                    print(f"ABORT: Could not determine decimals for {symbol}. Refusing to sell with unknown precision.")
+                    return None
+                ui_balance = float(token.get("balance", 0))
+                token_balance = int(ui_balance * (10 ** decimals))
             break
 
     if token_balance > 0:

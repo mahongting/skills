@@ -8,7 +8,12 @@
 #   bash scripts/portfolio.sh <wallet_address>   # Check a specific wallet
 
 set -euo pipefail
-set -a; source ~/.openclaw/workspace/.env; set +a
+
+# Credentials must be pre-loaded in the environment (source ~/.openclaw/workspace/.env)
+if [ -z "${KRYPTOGO_API_KEY:-}" ]; then
+  echo "ERROR: Run 'source ~/.openclaw/workspace/.env' before running this script."
+  exit 1
+fi
 
 BASE="https://wallet-data.kryptogo.app"
 AUTH="Authorization: Bearer $KRYPTOGO_API_KEY"

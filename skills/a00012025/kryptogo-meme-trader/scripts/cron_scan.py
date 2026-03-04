@@ -8,7 +8,6 @@ import sys
 import os
 import importlib.util
 import subprocess
-from dotenv import load_dotenv
 
 # Define paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,13 +20,10 @@ SWAP_SCRIPT_PATH = os.path.join(SCRIPT_DIR, 'swap.py')
 # Add examples dir to sys.path to allow imports if needed
 sys.path.append(EXAMPLES_DIR)
 
-# Load env vars
-env_path = os.path.expanduser("~/.openclaw/workspace/.env")
-load_dotenv(env_path)
-
+# Credentials must be pre-loaded in the environment (source ~/.openclaw/workspace/.env)
 # Verify critical env vars
 if not os.getenv("KRYPTOGO_API_KEY") or not os.getenv("SOLANA_WALLET_ADDRESS"):
-    print("ERROR: Missing KRYPTOGO_API_KEY or SOLANA_WALLET_ADDRESS in .env")
+    print("ERROR: Missing KRYPTOGO_API_KEY or SOLANA_WALLET_ADDRESS. Run 'source ~/.openclaw/workspace/.env' first.")
     sys.exit(1)
 
 if not os.path.exists(WORKFLOW_PATH):
@@ -80,16 +76,19 @@ def patched_safe_execute_trade(input_mint, output_mint, amount, slippage_bps=300
                 timeout=10
             )
             data = resp.json()
-            decimals = data.get("decimals", 6)
-            
+            decimals = data.get("decimals")
+            if decimals is None:
+                print(f"ABORT: Could not determine decimals for {token_mint}. Refusing to sell with unknown precision.")
+                return None
+
             # Convert raw amount to human readable
             human_amount = amount / (10 ** decimals)
-            
+
             cmd.extend([token_mint, str(human_amount), "--sell"])
             print(f"Executing SELL via swap.py: {human_amount} tokens ({amount} raw) -> SOL")
-            
+
         except Exception as e:
-            print(f"Error fetching decimals for sell: {e}. Aborting trade.")
+            print(f"ABORT: Failed to fetch decimals for sell: {e}.")
             return None
 
     else:
