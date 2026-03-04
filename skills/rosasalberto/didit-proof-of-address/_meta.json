@@ -3,9 +3,15 @@
   "slug": "didit-proof-of-address",
   "displayName": "Didit Proof Of Address",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771082204368,
-    "commit": "https://github.com/openclaw/skills/commit/ad89eeb1c6db8de42b7ca5c0060a0bd8eaa30e1a"
+    "version": "1.1.0",
+    "publishedAt": 1772514922369,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771082204368,
+      "commit": "https://github.com/openclaw/skills/commit/ad89eeb1c6db8de42b7ca5c0060a0bd8eaa30e1a"
+    }
+  ]
 }
