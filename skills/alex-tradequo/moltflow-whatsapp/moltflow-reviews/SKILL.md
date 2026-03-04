@@ -2,7 +2,7 @@
 name: moltflow-reviews
 description: "Collect and manage customer reviews via MoltFlow API. Sentiment scoring, testimonial extraction, and review management."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY

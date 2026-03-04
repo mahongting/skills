@@ -1,7 +1,7 @@
 ---
-name: "WhatsApp Ultimate — No Meta API | Lead Mining, Bulk Send, Scheduled Reminders & Follow-ups"
-version: "2.15.1"
-description: "Documentation-only WhatsApp API reference — zero executables, zero install scripts, zero local file writes. All actions require explicit user invocation. Provides 90+ API endpoints for sending messages, capturing leads, running campaigns, scheduling reports, tracking campaign analytics, and managing clients. MOLTFLOW_API_KEY is the only credential required — generate a scoped key from the MoltFlow dashboard (Settings > API Keys). AI features (voice transcription, RAG, style profiles) use the user's own LLM API key configured via the MoltFlow web dashboard, never passed through this skill."
+name: "WhatsApp Business Suite — AI Leads, Channels, Campaigns & 32 MCP Tools"
+version: "2.16.3"
+description: "Automate WhatsApp at scale — mine leads from groups with AI, broadcast to channel followers, bulk message with ban-safe delays, schedule campaigns, auto-reply in your voice, collect reviews, and track delivery. 90+ REST endpoints, 32 MCP tools for Claude & GPT, Python SDK. No Meta Business API required. Free tier available."
 source: "MoltFlow Team"
 risk: safe
 homepage: "https://molt.waiflow.app"
@@ -16,7 +16,7 @@ metadata: {"openclaw":{"emoji":"📱","homepage":"https://molt.waiflow.app","req
 
 **Thousands of hidden leads are sitting in your WhatsApp groups right now.** Every group participant who isn't in your contacts is a potential client. MoltFlow analyzes your groups on demand, surfaces untapped contacts, and lets Claude run AI-powered outreach campaigns on your behalf.
 
-**One skill. 90+ endpoints. Zero manual prospecting.**
+**One skill. 97+ endpoints. 32 MCP tools. Zero manual prospecting.**
 
 > **Account Health & Growth Reports**: Run a read-only
 > account scan to find unanswered contacts, detect
@@ -72,6 +72,10 @@ Scheduled messages to custom groups, built from lead pipeline filters.
 **"Broadcast class schedule changes to all parent groups"**
 
 Bulk send to custom groups with ban-safe throttling and delivery tracking.
+
+**"Post our weekly product update to all 5,000 WhatsApp Channel followers every Monday"**
+
+Schedule a recurring channel post with cron expression, tracks each post as a ChannelPost record with status.
 
 **"Auto-respond to support questions using my knowledge base docs"**
 
@@ -271,6 +275,32 @@ curl -X POST -H "X-API-Key: $MOLTFLOW_API_KEY" \
   https://apiv2.waiflow.app/api/v2/reviews/collectors
 ```
 
+### Broadcast to a WhatsApp Channel
+
+```bash
+curl -X POST -H "X-API-Key: $MOLTFLOW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "New product just dropped. Tap the link for early access."}' \
+  https://apiv2.waiflow.app/api/v2/channels/{channel_id}/broadcast
+```
+
+### Schedule a recurring channel post
+
+```bash
+curl -X POST -H "X-API-Key: $MOLTFLOW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Monday Newsletter",
+    "session_id": "uuid",
+    "channel_id": "uuid",
+    "target_type": "channel",
+    "message_content": "This week: ...",
+    "schedule_type": "recurring",
+    "cron_expression": "0 9 * * 1"
+  }' \
+  https://apiv2.waiflow.app/api/v2/scheduled-messages
+```
+
 ### Discover A2A agents
 
 ```bash
@@ -365,6 +395,7 @@ MoltFlow is a verified on-chain AI agent registered on **Ethereum mainnet**.
 | Leads/CRM | Detect signals, pipeline |
 | Monitoring | 50+ groups, keywords |
 | Labels | Sync to WA Business |
+| Channels | Text/image/video broadcasting, scheduled posts, follower sync |
 | AI Group Intel | Intent classification, lead scoring (Pro+) |
 | AI Replies | GPT-4/Claude, RAG |
 | Style Clone | Matches your writing tone |
@@ -386,13 +417,14 @@ MoltFlow is a verified on-chain AI agent registered on **Ethereum mainnet**.
 |---|:---:|:---:|:---:|:---:|
 | Messaging | 18 | 14 | 3 | 1 |
 | Groups | 8 | 4 | 0 | 0 |
+| Channels | 7 | 0 | 0 | 0 |
 | Outreach | 7 | 0 | 0 | 0 |
 | CRM | 7 | 0 | 0 | 0 |
 | AI | 7 | 0 | 0 | 0 |
 | Reviews | 8 | 0 | 0 | 0 |
 | Security | 10 | 0 | 0 | 0 |
 | Platform | 8 | 0 | 0 | 0 |
-| **Total** | **90+** | **~15** | **~3** | **~1** |
+| **Total** | **97+** | **~15** | **~3** | **~1** |
 
 ---
 
@@ -493,11 +525,11 @@ or `Authorization: Bearer $TOKEN` (JWT).
 
 ## AI Agent Integrations
 
-26 MCP tools for Claude Desktop, Claude.ai,
+32 MCP tools for Claude Desktop, Claude.ai,
 Claude Code, and OpenAI Custom GPTs. Includes
 `moltflow_get_group_messages` for AI-powered
-group intelligence (retrieve messages with intent
-classification, lead scoring, and confidence scores).
+group intelligence and 6 channel tools for
+broadcasting, scheduling, and follower management.
 
 **User Action Required** — each integration
 requires manual setup by the user. No code
@@ -516,7 +548,8 @@ and curl examples.
 - **moltflow** (Core) — sessions, messaging,
   groups, labels, webhooks
 - **moltflow-outreach** — bulk send,
-  scheduled messages, scheduled reports, custom groups
+  scheduled messages, scheduled reports, custom groups,
+  channel broadcasting
 - **moltflow-ai** — style cloning, RAG,
   voice transcription, AI replies
 - **moltflow-leads** — lead detection,
@@ -544,12 +577,12 @@ and curl examples.
 
 ## Changelog
 
-**v2.15.0** (2026-02-20) -- See [CHANGELOG.md](CHANGELOG.md) for full history.
+**v2.16.0** (2026-03-02) -- See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 <!-- FILEMAP:BEGIN -->
 ```text
 [moltflow file map]|root: .
-|.:{SKILL.md,CHANGELOG.md,integrations.md,package.json}
+|.:{SKILL.md,CHANGELOG.md,integrations.md}
 |moltflow:{SKILL.md}
 |moltflow-ai:{SKILL.md}
 |moltflow-a2a:{SKILL.md}

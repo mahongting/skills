@@ -2,7 +2,7 @@
 name: moltflow
 description: "WhatsApp Business automation API for sessions, messaging, groups, labels, and webhooks. Use when: whatsapp, send message, create session, qr code, monitor group, label contacts, webhook."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY

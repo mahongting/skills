@@ -2,7 +2,7 @@
 name: moltflow-outreach
 description: "Bulk messaging, scheduled messages, scheduled reports, and custom groups for WhatsApp outreach. Use when: bulk send, broadcast, schedule message, schedule report, cron, custom group, contact list, ban-safe messaging."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY
@@ -541,3 +541,84 @@ curl https://apiv2.waiflow.app/api/v2/custom-groups/{group_id}/export/csv \
 - **moltflow-a2a** -- Agent-to-Agent protocol, encrypted messaging, content policy
 - **moltflow-reviews** -- Review collection and testimonial management
 - **moltflow-admin** -- Platform administration, user management, plan configuration
+
+---
+
+## WhatsApp Channels (v7.0)
+
+Broadcast one-way to WhatsApp Channel followers without exposing your phone number. No anti-spam delays needed — channel posts are newsletters, not 1-on-1 messages.
+
+### Real-World Scenarios
+
+**Publisher** — "Post our weekly newsletter to the channel every Monday at 9 AM"
+
+Schedule a recurring channel post with cron `0 9 * * 1`.
+
+**Brand** — "Announce a product launch now to all 3,000 channel followers"
+
+Call `broadcast_channel_post` with the announcement text.
+
+### Key Endpoints
+
+| Action | Method | Path |
+|--------|--------|------|
+| List channels | GET | `/api/v2/channels` |
+| Get channel | GET | `/api/v2/channels/{id}` |
+| Create channel | POST | `/api/v2/channels` |
+| Discover importable channels | GET | `/api/v2/channels/discover?session_id=` |
+| Import existing channel | POST | `/api/v2/channels/import` |
+| Delete channel | DELETE | `/api/v2/channels/{id}` |
+| Broadcast post | POST | `/api/v2/channels/{id}/broadcast` |
+| Sync followers | POST | `/api/v2/channels/{id}/sync-followers` |
+| Check media support | GET | `/api/v2/channels/capabilities` |
+| Schedule channel post | POST | `/api/v2/scheduled-messages` (target_type: channel) |
+
+### Plan Limits
+
+| Plan | Channels | Posts/Month |
+|------|----------|-------------|
+| Free | 1 | 10 |
+| Starter | 2 | 50 |
+| Pro | 5 | 500 |
+| Business | 20 | 2,000 |
+
+### Example: Broadcast Now
+
+```bash
+curl -X POST https://apiv2.waiflow.app/api/v2/channels/{channel_id}/broadcast \
+  -H "X-API-Key: $MOLTFLOW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "New product just launched. Tap the link for early access."}'
+```
+
+### Example: Discover and Import Existing Channels
+
+```bash
+# Discover and import existing channels
+curl "https://apiv2.waiflow.app/api/v2/channels/discover?session_id=$SESSION_ID" \
+  -H "X-API-Key: $MOLTFLOW_API_KEY"
+# Returns: [{wa_channel_id, name, follower_count, role}, ...]
+
+# Import a discovered channel
+curl -X POST https://apiv2.waiflow.app/api/v2/channels/import \
+  -H "X-API-Key: $MOLTFLOW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "your-session-uuid", "wa_channel_id": "123@newsletter"}'
+```
+
+### Example: Schedule Weekly Post
+
+```bash
+curl -X POST https://apiv2.waiflow.app/api/v2/scheduled-messages \
+  -H "X-API-Key: $MOLTFLOW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Weekly Newsletter",
+    "session_id": "uuid",
+    "channel_id": "uuid",
+    "target_type": "channel",
+    "message_content": "Weekly update...",
+    "schedule_type": "recurring",
+    "cron_expression": "0 9 * * 1"
+  }'
+```

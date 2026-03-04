@@ -2,7 +2,7 @@
 name: moltflow-a2a
 description: "Agent-to-Agent protocol for MoltFlow: agent discovery, encrypted messaging, group management, content policy. Use when: a2a, agent card, agent message, encrypted, content policy, agent discovery."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY

@@ -2,7 +2,7 @@
 name: moltflow-leads
 description: "WhatsApp lead detection and CRM pipeline. Detect purchase-intent signals in groups, track lead status, bulk operations, CSV/JSON export. Use when: leads, lead detection, pipeline, qualify, convert, bulk status, export leads."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY

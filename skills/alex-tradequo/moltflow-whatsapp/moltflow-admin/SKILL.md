@@ -2,7 +2,7 @@
 name: moltflow-admin
 description: "Manage MoltFlow authentication, billing, API keys, usage tracking, and tenant settings."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY

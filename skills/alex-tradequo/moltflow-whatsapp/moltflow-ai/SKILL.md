@@ -2,7 +2,7 @@
 name: moltflow-ai
 description: "AI-powered WhatsApp features: auto-replies, voice transcription, RAG knowledge base, and style profiles. Use when: ai reply, transcribe voice, knowledge base, upload document, build style, learn mode."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY

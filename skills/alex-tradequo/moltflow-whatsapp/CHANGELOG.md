@@ -4,6 +4,26 @@ All notable changes to the **MoltFlow Skills** package are documented here.
 
 ---
 
+## [2.16.2] - 2026-03-02
+
+### Added
+- **Channel discover + import** — 2 new MCP tools: discover_channels, import_channel (8 channel tools total)
+- **channels.py** — added `discover` and `import` CLI commands
+- **erc8004-agent.json** — updated to 15 mcpTools (was 13)
+- **Help page, llms.txt, llms-full.txt, blog post** — all surfaces updated with discover/import endpoints
+
+---
+
+## [2.16.0] - 2026-03-02
+
+### Added
+- **WhatsApp Channels (v7.0)** — 6 MCP tools: list_channels, get_channel, create_channel, delete_channel, broadcast_channel_post, schedule_channel_post
+- **channels.py utility script** — CLI for channel management (broadcast, schedule, sync, capabilities check)
+- **moltflow-outreach/SKILL.md** — Channel broadcasting section with endpoints, plan limits, and examples
+- **GET /channels/capabilities** — WAHA version check endpoint for media broadcast compatibility
+
+---
+
 ## [2.15.1] - 2026-02-22
 
 ### Fixed

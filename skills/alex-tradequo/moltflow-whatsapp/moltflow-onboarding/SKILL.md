@@ -2,7 +2,7 @@
 name: moltflow-onboarding
 description: "Read-only account health check and growth opportunity report for MoltFlow WhatsApp automation. Fetches account metadata (counts, timestamps, group membership) and presents findings. Use when: onboarding, setup, getting started, growth, optimize, briefing, account review."
 source: "MoltFlow Team"
-version: "2.15.1"
+version: "2.16.1"
 risk: safe
 requiredEnv:
   - MOLTFLOW_API_KEY
