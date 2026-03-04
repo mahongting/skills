@@ -81,41 +81,43 @@ const mg = require('./mindgraph-client.js');
 (async () => {
   const lines = [];
 
-  // Active Goals
+  // Active Goals — use retrieve('active_goals') which is the correct server endpoint
   try {
-    const goals = await mg.activeGoals();
-    if (goals && goals.length) {
+    const goals = await mg.retrieve('active_goals');
+    const items = Array.isArray(goals) ? goals : (goals.items || []);
+    if (items.length) {
       lines.push('### 🎯 Active Goals');
-      for (const g of goals) {
+      for (const g of items) {
         const pri = g.props?.priority ? \` [\${g.props.priority}]\` : '';
-        const prog = g.props?.progress != null ? \` (\${Math.round(g.props.progress * 100)}%)\` : '';
-        lines.push(\`- **\${g.label}**\${pri}\${prog}: \${g.props?.description || g.summary || ''}\`);
+        lines.push(\`- **\${g.label}**\${pri}: \${g.props?.description || g.summary || ''}\`);
       }
       lines.push('');
     }
   } catch {}
 
-  // Active Projects — typed query /nodes?node_type=Project (server-filtered, no full scan)
+  // Active Projects — filter out truly inactive statuses only
+  // 'flagged' = needs review but still exists; 'live' and 'active' = working
   try {
     const res = await mg.getNodes({ nodeType: 'Project', limit: 50 });
-    const all = res.items || res;
-    const DONE = ['completed', 'archived', 'cancelled'];
-    const projects = all.filter(n =>
-      !n.props?.status || !DONE.includes(n.props.status.toLowerCase())
-    );
+    const all = (res.items || res).filter(n => !n.tombstone_at);
+    const HIDE = new Set(['completed', 'archived', 'cancelled']);
+    const projects = all
+      .filter(n => !HIDE.has((n.props?.status || '').toLowerCase()))
+      .sort((a, b) => (b.salience || 0) - (a.salience || 0)); // highest salience first
     if (projects.length) {
       lines.push('### 📁 Active Projects');
       for (const p of projects.slice(0, 8)) {
-        lines.push(\`- **\${p.label}**: \${p.props?.description || p.summary || ''}\`);
+        const status = p.props?.status ? \` [\${p.props.status}]\` : '';
+        lines.push(\`- **\${p.label}**\${status}: \${p.props?.description || p.summary || ''}\`);
       }
       lines.push('');
     }
   } catch {}
 
-  // Hard Constraints — typed query /nodes?node_type=Constraint (server-filtered, no full scan)
+  // Hard Constraints
   try {
     const res = await mg.getNodes({ nodeType: 'Constraint', limit: 100 });
-    const all = res.items || res;
+    const all = (res.items || res).filter(n => !n.tombstone_at);
     const hard = all.filter(n => n.props?.hard === true);
     if (hard.length) {
       lines.push('### 🚫 Hard Constraints (' + hard.length + ')');
@@ -126,13 +128,32 @@ const mg = require('./mindgraph-client.js');
     }
   } catch {}
 
-  // Decisions — recent 10 decisions
+  // Open Decisions — actionable ones only, sorted by salience
+  // Fetch all Decisions once; split into open vs recent-made
   try {
-    const res = await mg.getNodes({ nodeType: 'Decision', limit: 10 });
-    const decisions = res.items || res;
-    if (decisions && decisions.length) {
-      lines.push(\`### ⚠️ Recent Decisions (\${decisions.length})\`);
-      for (const d of decisions) {
+    const res = await mg.getNodes({ nodeType: 'Decision', limit: 100 });
+    const all = (res.items || res).filter(n => !n.tombstone_at);
+
+    const open = all
+      .filter(n => n.props?.status === 'open')
+      .sort((a, b) => (b.salience || 0) - (a.salience || 0))
+      .slice(0, 5);
+    if (open.length) {
+      lines.push(\`### ⚠️ Open Decisions (\${open.length})\`);
+      for (const d of open) {
+        lines.push(\`- **\${d.label}**: \${d.props?.question || d.props?.description || d.summary || ''}\`);
+      }
+      lines.push('');
+    }
+
+    // Recent made/resolved decisions — sort by created_at desc, skip dreamer-touched ones
+    const made = all
+      .filter(n => n.props?.status && n.props.status !== 'open')
+      .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+      .slice(0, 10);
+    if (made.length) {
+      lines.push(\`### ✅ Recent Decisions (\${made.length})\`);
+      for (const d of made) {
         const status = d.props?.status ? \` [\${d.props.status}]\` : '';
         lines.push(\`- **\${d.label}**\${status}: \${d.props?.question || d.props?.description || d.summary || ''}\`);
       }
@@ -140,46 +161,36 @@ const mg = require('./mindgraph-client.js');
     }
   } catch {}
 
-  // Recent Observations — news events, etc.
+  // Recent Observations — sort by created_at desc
   try {
-    const res = await mg.getNodes({ nodeType: 'Observation', limit: 5 });
-    const obs = res.items || res;
-    if (obs && obs.length) {
-      lines.push(\`### 🗞️ Recent Observations (\${obs.length})\`);
-      for (const o of obs) {
+    const res = await mg.getNodes({ nodeType: 'Observation', limit: 50 });
+    const all = (res.items || res).filter(n => !n.tombstone_at);
+    const recent = all
+      .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+      .slice(0, 5);
+    if (recent.length) {
+      lines.push(\`### 🗞️ Recent Observations (\${recent.length})\`);
+      for (const o of recent) {
         lines.push(\`- **\${o.label}**: \${o.props?.content || o.summary || ''}\`);
       }
       lines.push('');
     }
   } catch {}
 
-  // Open Decisions — actionable, needs resolution
-  try {
-    const res = await mg.getNodes({ nodeType: 'Decision', limit: 50 });
-    const all = res.items || res;
-    const open = all.filter(n => !n.tombstone_at && n.props?.status === 'open').slice(0, 5);
-    if (open.length) {
-      lines.push(\`### 🔓 Open Decisions (\${open.length})\`);
-      for (const d of open) {
-        lines.push(\`- **\${d.label}**: \${d.props?.question || d.props?.description || d.summary || ''}\`);
-      }
-      lines.push('');
-    }
-  } catch {}
-
-  // Pending Tasks
+  // Pending Tasks — include tasks with no status set (undefined = not yet started)
   try {
     const res = await mg.getNodes({ nodeType: 'Task', limit: 100 });
-    const all = res.items || res;
-    const pending = all.filter(n =>
-      !n.tombstone_at &&
-      ['pending', 'active'].includes(n.props?.status || '')
-    ).slice(0, 8);
+    const all = (res.items || res).filter(n => !n.tombstone_at);
+    const pending = all.filter(n => {
+      const s = n.props?.status || '';
+      // Show: pending, active, or no status (unstarted). Hide: completed, archived, done.
+      return !['completed', 'archived', 'done', 'cancelled'].includes(s);
+    }).slice(0, 8);
     if (pending.length) {
-      lines.push(\`### ✅ Pending Tasks (\${pending.length})\`);
+      lines.push(\`### 📋 Pending Tasks (\${pending.length})\`);
       for (const t of pending) {
         const pri = t.props?.priority ? \` [\${t.props.priority}]\` : '';
-        lines.push(\`- **\${t.label}**\${pri}\`);
+        lines.push(\`- **\${t.label}**\${pri}: \${t.props?.description || t.summary || ''}\`);
       }
       lines.push('');
     }
@@ -283,7 +294,7 @@ if (!key) { process.exit(0); }
     const seen = new Set();
     const relevant = items
       .filter(n => {
-        if ((n.score || 0) < 0.55) return false;
+        if ((n.score || 0) < 0.48) return false;
         if (NOISE_TYPES.has(n.node_type)) return false;
         if (n.tombstone_at) return false;
         if (seen.has(n.uid)) return false;

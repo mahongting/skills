@@ -128,6 +128,43 @@ const results = await mg.retrieve('active_goals');
 
 ---
 
+## Nightly Dreaming System
+
+The dreaming system runs 18 analyzers against your graph every night to maintain epistemic health autonomously.
+
+```bash
+# Run manually
+node scripts/dreaming/dream-agent.js --all --apply --report
+
+# Run description enrichment pass (LLM-enriches thin nodes)
+node scripts/dreaming/enrich-descriptions.js --limit 30
+
+# Re-embed all nodes after enrichment
+export OPENAI_API_KEY=sk-...
+node scripts/dreaming/apply-embeddings.js
+```
+
+**What the analyzers do:**
+- `schema_compliance` — enforces field types and required props
+- `data_quality` — copies rationale → description, flags incomplete decisions
+- `weak_claims` — finds claims with low confidence
+- `recency_salience` — boosts recently accessed nodes
+- `duplicate_nodes` — merges near-identical nodes
+- `trending` — detects recently active node clusters
+- `task_suggestions` — proposes tasks from stalled goals
+- `edge_type_consistency` — fixes RELEVANT_TO → semantic edges
+- `bridge_nodes` — detects disconnected clusters
+- `inference_chains` — finds implied edges missing from graph
+- ...and 8 more
+
+**Auto-applied safely:** `salience_boost`, `confidence_update`, `salience_decay`, `edge_addition`, `task_suggestion`, `schema_fix`, `data_enrichment`, `dedup`, `trending`
+
+**Review-only (surfaced in report):** `answer_question`, `belief_revision`, `data_gap`, `decision_expired`, `goal_review`, `source_drift`
+
+**Enrichment runs weekly (Sunday)** automatically when `dream-agent.js` runs, or anytime with `--enrich`.
+
+---
+
 ## Bootstrap Context Injection (OpenClaw Hook)
 
 MindGraph ships an OpenClaw hook that automatically injects graph context into every session before your agent reads its first message — no manual `mg.retrieve()` calls needed at startup.

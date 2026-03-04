@@ -71,7 +71,7 @@ function sanitizeLabel(label) {
 // ─── 1. Reality Layer (Ingest) ────────────────────────────────────────────────
 
 async function ingest(label, content, action = 'observation', opts = {}) {
-  return request('POST', '/reality/ingest', {
+  const result = await request('POST', '/reality/ingest', {
     action, // 'source', 'snippet', 'observation'
     label: sanitizeLabel(label),
     content,
@@ -83,12 +83,17 @@ async function ingest(label, content, action = 'observation', opts = {}) {
     salience: opts.salience,
     agent_id: opts.agentId || CONFIG.defaultAgent,
   });
+  // Embed immediately so semantic retrieval works without waiting for nightly dreamer
+  const uid = result?.uid || result?.observation_uid || result?.source_uid || result?.snippet_uid;
+  const embedText = [label, content].filter(Boolean).join(' ').slice(0, 2000);
+  if (uid) embedNode(uid, embedText).catch(() => {});
+  return result;
 }
 
 // ─── 2. Reality Layer (Entity) ────────────────────────────────────────────────
 
 async function manageEntity(opts = {}) {
-  return request('POST', '/reality/entity', {
+  const result = await request('POST', '/reality/entity', {
     action: opts.action, // 'create', 'alias', 'resolve', 'fuzzy_resolve', 'merge'
     label: opts.label ? sanitizeLabel(opts.label) : undefined,
     entity_type: opts.entityType,
@@ -99,7 +104,16 @@ async function manageEntity(opts = {}) {
     merge_uid: opts.mergeUid,
     limit: opts.limit,
     agent_id: opts.agentId || CONFIG.defaultAgent,
+    props: opts.props,
   });
+  // Embed immediately so semantic retrieval works without waiting for nightly dreamer
+  if (opts.action === 'create') {
+    const uid = result?.uid || result?.entity_uid;
+    const desc = opts.props?.description || opts.text || '';
+    const embedText = [opts.label, desc].filter(Boolean).join(' ').slice(0, 2000);
+    if (uid) embedNode(uid, embedText).catch(() => {});
+  }
+  return result;
 }
 
 // ─── 3. Epistemic Layer (Argument) ───────────────────────────────────────────
@@ -360,6 +374,44 @@ async function embedText(text) {
   });
 }
 
+async function embedNode(uid, text) {
+  // Embed a single node immediately after creation — don't wait for nightly dreamer
+  if (!uid || !text) return;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return; // silently skip if no key (e.g. sub-agent without env)
+  try {
+    const vector = await embedText(text);
+    await request('PUT', `/node/${uid}/embedding`, { embedding: vector });
+  } catch (e) {
+    // Non-fatal — dreamer will catch it tonight if this fails
+  }
+}
+
+async function lookupEntity(nameOrTopic, opts = {}) {
+  // Reliable mid-conversation entity lookup: FTS first (exact/partial label match),
+  // then semantic as fallback. Returns array of matching nodes.
+  const limit = opts.limit || 3;
+  try {
+    // 1. FTS search — fast, exact, no embedding required
+    const ftsResults = await search(nameOrTopic, { limit: limit * 2 });
+    const ftsNodes = Array.isArray(ftsResults) ? ftsResults : (ftsResults?.items || []);
+    const ftsHits = ftsNodes
+      .map(r => r.node || r)
+      .filter(n => n && !n.tombstone_at)
+      .slice(0, limit);
+
+    if (ftsHits.length > 0) return ftsHits;
+
+    // 2. Semantic fallback — slower, broader
+    const semResults = await retrieve('semantic', { query: nameOrTopic, limit: limit * 2 });
+    return (Array.isArray(semResults) ? semResults : [])
+      .filter(n => (n.score || 0) > 0.45 && !n.tombstone_at)
+      .slice(0, limit);
+  } catch (e) {
+    return []; // never throw — lookup is best-effort
+  }
+}
+
 async function retrieve(mode, opts = {}) {
   // Semantic mode: embed query client-side, then POST /embeddings/search
   if (mode === 'semantic') {
@@ -434,7 +486,7 @@ async function evolve(action, uid, opts = {}) {
 // ─── Low-level CRUD (Backward Compatibility) ───────────────────────────────
 
 async function addNode(label, props, opts = {}) {
-  return request('POST', '/node', {
+  const result = await request('POST', '/node', {
     label: sanitizeLabel(label),
     props,
     confidence: opts.confidence,
@@ -442,6 +494,12 @@ async function addNode(label, props, opts = {}) {
     summary: opts.summary,
     agent_id: opts.agentId || CONFIG.defaultAgent,
   });
+  // Embed immediately so semantic retrieval works without waiting for nightly dreamer
+  const uid = result?.uid;
+  const desc = props?.description || opts.summary || '';
+  const text = [label, desc].filter(Boolean).join(' ').slice(0, 2000);
+  if (uid) embedNode(uid, text).catch(() => {});
+  return result;
 }
 
 async function getNode(uid) {
@@ -584,6 +642,9 @@ module.exports = {
   updateNode,
   deleteNode,
   link,
+  embedNode,
+  lookupEntity,
+  request, // low-level HTTP — use sparingly
   getEdges,
   edgesTo,
   edgeBetween,

@@ -97,6 +97,13 @@ async function writeNode(node, opts) {
     switch (type) {
       // 1. Reality
       case 'claim':
+        // Use addArgument for claims to satisfy server schema
+        result = await mg.addArgument({
+          claim: { label, content },
+          confidence: node.confidence || 0.5,
+          agentId: opts.agentId || 'importer'
+        });
+        break;
       case 'observation':
       case 'snippet':
       case 'source':
@@ -135,8 +142,17 @@ async function writeNode(node, opts) {
       case 'goal':
       case 'project':
       case 'milestone':
-      case 'constraint':
         result = await mg.addCommitment(label, content, type, props);
+        break;
+      case 'constraint':
+      case 'policy':
+        // Map constraints to governance policies
+        result = await mg.governance({
+          action: 'create_policy',
+          label,
+          policyContent: content,
+          agentId: opts.agentId || 'importer'
+        });
         break;
       case 'decision':
       case 'option':
