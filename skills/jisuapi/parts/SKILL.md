@@ -95,7 +95,7 @@ python3 skills/parts/parts.py replace '{"partsid":12656367}'
 
 ## 常见错误码
 
-来自 [官方汽车配件OE文档](https://www.jisuapi.com/api/parts/)：
+来自 [极速数据汽车配件OE文档](https://www.jisuapi.com/api/parts/)：
 
 | 代号 | 说明                 |
 |------|----------------------|
