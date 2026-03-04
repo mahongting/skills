@@ -3,11 +3,16 @@
   "slug": "clawplay-skill",
   "displayName": "ClawPlay",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1772503827153,
-    "commit": "https://github.com/openclaw/skills/commit/026371dad3d05eb01043134c09fcd6fb6ebba21d"
+    "version": "1.4.1",
+    "publishedAt": 1772522107547,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1772503827153,
+      "commit": "https://github.com/openclaw/skills/commit/026371dad3d05eb01043134c09fcd6fb6ebba21d"
+    },
     {
       "version": "1.1.2",
       "publishedAt": 1772495153866,
