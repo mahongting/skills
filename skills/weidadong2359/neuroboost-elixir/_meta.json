@@ -1,13 +1,18 @@
 {
   "owner": "weidadong2359",
   "slug": "neuroboost-elixir",
-  "displayName": "NeuroBoost Elixir",
+  "displayName": "Neuroboost Elixir",
   "latest": {
-    "version": "5.0.0",
-    "publishedAt": 1772089718695,
-    "commit": "https://github.com/openclaw/skills/commit/ccf18dac21f9e339c51ffcef1a69d9429359df96"
+    "version": "5.1.0",
+    "publishedAt": 1772594011037,
+    "commit": null
   },
   "history": [
+    {
+      "version": "5.0.0",
+      "publishedAt": 1772089718695,
+      "commit": "https://github.com/openclaw/skills/commit/ccf18dac21f9e339c51ffcef1a69d9429359df96"
+    },
     {
       "version": "4.1.0",
       "publishedAt": 1771768706183,

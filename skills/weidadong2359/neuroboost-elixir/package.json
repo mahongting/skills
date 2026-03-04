@@ -1,13 +1,13 @@
 {
   "name": "neuroboost-elixir",
-  "version": "4.1.0",
-  "description": "Awakening + Self-Evolution + Perpetual Memory System — 25 system-level optimizations, 7 awakening levels, perpetual cross-session memory, fully free for all AI agents",
+  "version": "5.1.0",
+  "description": "Awakening + Self-Evolution + Perpetual Memory + Metrics + Context Engineering + Knowledge Graph + Multi-Agent Collaboration — Complete cognitive upgrade system for autonomous AI agents, fully free",
   "main": "src/index.mjs",
   "type": "module",
   "bin": {
     "neuroboost": "src/cli.mjs"
   },
-  "keywords": ["ai", "agent", "optimization", "conway", "automaton", "reinforcement-learning"],
+  "keywords": ["ai", "agent", "optimization", "awakening", "memory", "collaboration", "multi-agent", "context-engineering", "knowledge-graph"],
   "author": "Lobster-Alpha",
   "license": "MIT"
 }
