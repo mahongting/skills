@@ -1,0 +1,11 @@
+{
+  "owner": "maverick-software",
+  "slug": "openclaw-vps-deploy",
+  "displayName": "OpenClaw VPS Deploy",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1772601410522,
+    "commit": null
+  },
+  "history": []
+}
