@@ -244,7 +244,7 @@ Track email delivery status in real-time using webhooks. Resend sends HTTP POST 
 | `email.complained` | Unsubscribe user (spam complaint) |
 | `email.opened` / `email.clicked` | Track engagement (marketing only) |
 
-**CRITICAL: Always verify webhook signatures.** Without verification, attackers can send fake events to your endpoint.
+**Verify webhook signatures for every request.** Without verification, anyone can send fake events to your endpoint.
 
 See [references/webhooks.md](references/webhooks.md) for setup, signature verification code, and all event types.
 
@@ -278,29 +278,31 @@ const { data, error } = await resend.emails.send({
   to: ['delivered@resend.dev'],
   subject: 'Welcome!',
   template: {
-    id: 'tmpl_abc123',
+    id: 'tmpl_abc123',       // or alias: 'welcome-email'
     variables: {
-      USER_NAME: 'John',      // Case-sensitive!
+      USER_NAME: 'John',     // Case-sensitive! Must match template exactly.
       ORDER_TOTAL: '$99.00'
     }
   }
 });
 ```
 
-**IMPORTANT:** Variable names are **case-sensitive** and must match exactly as defined in the template editor. `USER_NAME` ≠ `user_name`.
+**Note:** Variable names are **case-sensitive** and must match the template definition exactly. Any casing is valid — `USER_NAME`, `userName`, or `user_name` — as long as the send call uses the same casing as defined in the template.
 
 | Fact | Detail |
 |------|--------|
-| **Max variables** | 20 per template |
-| **Reserved names** | `FIRST_NAME`, `LAST_NAME`, `EMAIL`, `RESEND_UNSUBSCRIBE_URL`, `contact`, `this` |
-| **Fallback values** | Optional - if not set and variable missing, send fails |
+| **Reserved names** | `FIRST_NAME`, `LAST_NAME`, `EMAIL`, `UNSUBSCRIBE_URL`, `contact`, `this` |
+| **Fallback values** | Optional — if not set and variable missing at send time, send fails (422) |
 | **Can't combine with** | `html`, `text`, or `react` parameters |
+| **subject / from** | Template defaults can be overridden per-send |
 
-Templates must be **published** in the dashboard before use. Draft templates won't work.
+Templates must be **published** before use. Draft templates cannot send.
+
+To create, update, publish, or delete templates via API, use the `templates` skill.
 
 ## Testing
 
-**WARNING: Never test with fake addresses at real email providers.**
+**Avoid testing with fake addresses at real email providers.**
 
 Using addresses like `test@gmail.com`, `example@outlook.com`, or `fake@yahoo.com` will:
 - **Bounce** - These addresses don't exist
@@ -387,9 +389,9 @@ Resend automatically manages a suppression list of addresses that should not rec
 | Same idempotency key, different payload | Returns 409 error - use unique key per unique email content |
 | Tracking enabled for transactional emails | Disable open/click tracking for password resets, receipts - hurts deliverability |
 | Using "no-reply" sender address | Use real address like `support@` - improves trust signals with email providers |
-| Not verifying webhook signatures | Always verify - attackers can send fake events to your endpoint |
+| Not verifying webhook signatures | Always verify — unverified events can't be trusted |
 | Testing with fake emails (test@gmail.com) | Use `delivered@resend.dev` - fake addresses bounce and hurt reputation |
-| Template variable name mismatch | Variable names are case-sensitive - `USER_NAME` ≠ `user_name` |
+| Template variable name mismatch | Variable names are case-sensitive — must match the template definition exactly. Any casing is valid; `USER_NAME` and `firstName` are both fine as long as the send call matches. |
 | Sending high volume from new domain | Warm up gradually - sudden spikes trigger spam filters |
 
 ## Notes
