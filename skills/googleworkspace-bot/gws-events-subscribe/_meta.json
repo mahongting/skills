@@ -1,0 +1,11 @@
+{
+  "owner": "googleworkspace-bot",
+  "slug": "gws-events-subscribe",
+  "displayName": "Gws Events Subscribe",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772670428682,
+    "commit": null
+  },
+  "history": []
+}
