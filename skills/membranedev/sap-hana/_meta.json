@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "sap-hana",
+  "displayName": "Sap Hana",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772676143725,
+    "commit": null
+  },
+  "history": []
+}
