@@ -1,0 +1,11 @@
+{
+  "owner": "seal-re",
+  "slug": "rag-ingest",
+  "displayName": "rag-ingest",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772671860212,
+    "commit": null
+  },
+  "history": []
+}
