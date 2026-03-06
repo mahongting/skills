@@ -72,7 +72,7 @@ python3 skills/shouji/shouji.py '{"shouji":"13456755448"}'
 
 ## 常见错误码
 
-来源于 [官方手机归属地文档](https://www.jisuapi.com/api/shouji/)：
+来源于 [极速数据手机归属地文档](https://www.jisuapi.com/api/shouji/)：
 
 | 代号 | 说明         |
 |------|--------------|

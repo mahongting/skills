@@ -1,11 +1,17 @@
 {
   "owner": "jisuapi",
   "slug": "shouji",
-  "displayName": "极速数据手机号码归属地查询",
+  "displayName": "手机号码归属地查询 - Mobile Phone Number Location Query",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772512206144,
-    "commit": "https://github.com/openclaw/skills/commit/12faf699793d554bc6474a2d9f2ccc00c752ae57"
+    "version": "1.0.2",
+    "publishedAt": 1772532739415,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772512206144,
+      "commit": "https://github.com/openclaw/skills/commit/12faf699793d554bc6474a2d9f2ccc00c752ae57"
+    }
+  ]
 }
