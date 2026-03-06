@@ -53,7 +53,8 @@ Ask the user which mode if not stated. Default: **standard**.
 | Driver's license number | Any state/country format | [LICENSE NUMBER REDACTED] |
 | Date of birth | 14/03/1990 | [DATE OF BIRTH REDACTED] |
 | Age (when combined with DOB) | "Jane Smith, age 34" | [AGE REDACTED] |
-| Home / residential address | 42 Baker St, London | [ADDRESS REDACTED] |
+| Home / residential address | 42 Baker St, London; BLK 101 Dalvey Road | [ADDRESS REDACTED] |
+| Apartment / unit number | #02-01, Unit 3B, Apt 4C, Flat 12 | [UNIT NUMBER REDACTED] |
 | Personal phone number | +1-555-000-1234 | [PHONE REDACTED] |
 | Personal email | user@gmail.com | [EMAIL REDACTED] |
 | Biometric reference | Fingerprint ID, facial recognition ID | [BIOMETRIC DATA REDACTED] |
@@ -127,14 +128,71 @@ Ask the user which mode if not stated. Default: **standard**.
 
 ## Step 5 — Run Script Redaction
 
-For text files, use the redactor script:
+Run from the directory where `skills/` is installed (your project root).
+
+### 5a — Read the document first
+
+Before running the script, use the `Read` tool to extract the document's full text. Identify:
+- Names in ALL-CAPS (e.g. `SMITH JOHN`) — the engine requires mixed case unless the name follows a keyword label
+- Names that appear far from their label in the PDF text extraction order (labels and values on different lines or columns may not be adjacent in extraction)
+- Document-specific identifiers: serial numbers, reference codes, custom ID formats
+- Any PII not matching standard patterns (e.g. foreign-language names, non-standard ID formats)
+
+These will need `--custom` patterns in step 5c.
+
+### 5b — Dry run (preview, no file written)
+
 ```bash
-python skills/doc-process/scripts/redactor.py --file document.txt --output redacted.txt --mode standard --log
+python skills/doc-process/scripts/redactor.py --file document.pdf --mode standard --dry-run
 ```
 
-For PDF files: extract text first if possible, then run script, then redact the PDF manually.
+Review the printed summary. Note any PII that was NOT detected.
 
-For images: redact visually by describing which areas to black out and providing a visual description.
+### 5c — Full redaction with custom patterns for gaps
+
+```bash
+# PDF — black bars drawn over PII on a copy; original never modified
+python skills/doc-process/scripts/redactor.py \
+  --file document.pdf \
+  --output document_redacted.pdf \
+  --mode standard \
+  --custom "SMITH\s+JOHN" \
+  --custom "REF-[A-Z0-9]+" \
+  --log
+
+# Text file — token replacement (e.g. [SSN REDACTED])
+python skills/doc-process/scripts/redactor.py \
+  --file document.txt --output document_redacted.txt --mode standard --log
+
+# Image — OCR-based detection, black bars painted on a copy
+# Requires: pip install Pillow pytesseract && brew install tesseract
+python skills/doc-process/scripts/redactor.py \
+  --file scan.png --output scan_redacted.png --mode full --log
+```
+
+`--custom` is repeatable. Each takes a Python regex. Use it for every gap identified in step 5a. For ALL-CAPS names use `\bFIRSTNAME\s+LASTNAME\b`; for reference codes use `\bPREFIX-[A-Z0-9]+\b`.
+
+### 5d — Verify the output
+
+After redaction, re-extract the text from the output file and confirm the PII is gone:
+
+```bash
+# Quick check: search the redacted PDF for any remaining sensitive values
+python -c "
+import fitz
+doc = fitz.open('document_redacted.pdf')
+text = '\n'.join(p.get_text() for p in doc)
+print(text)
+"
+```
+
+If any PII is still present in the extracted text, add a `--custom` pattern for it and re-run on the original file (not the already-redacted copy).
+
+**How PDF redaction works:** word bounding boxes are extracted from the PDF layout engine; matched PII spans are covered with solid-black PyMuPDF redaction annotations; `apply_redactions()` burns the fills in and removes the underlying text data — redacted content cannot be copy-pasted or extracted. The file is saved incrementally so every non-redacted element (fonts, images, vector graphics, metadata) is left completely untouched. The original file is never modified.
+
+**Requires:** `pip install pymupdf>=1.23` for PDF; `pip install Pillow>=10.0 pytesseract>=0.3` + `brew install tesseract` for image mode.
+
+For images without OCR support: visually describe which areas to black out and apply manually.
 
 ---
 
@@ -195,8 +253,13 @@ If quasi-identifiers remain, suggest: "Consider also redacting [age/zip/specific
 ## Step 9 — Save Options
 
 Ask: "Would you like me to save the redacted document?"
-- Text file: `<original_name>_redacted.txt`
-- Note the redaction log separately: `<original_name>_redaction_log.txt`
+
+Output path is auto-named `<original_name>_redacted.<ext>` unless `--output` is specified:
+- PDF: `<original_name>_redacted.pdf`
+- Text: `<original_name>_redacted.txt`
+- Image: `<original_name>_redacted.png` / `.jpg`
+
+The redaction log (printed to stderr with `--log`) can be saved separately if needed.
 
 ---
 

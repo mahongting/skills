@@ -1,127 +1,149 @@
 ---
 name: doc-process
 description: >
-  Multi-purpose document intelligence skill: categorize documents, autofill forms, analyze contracts (risks/red flags),
-  scan receipts and invoices, analyze bank statements (subscriptions/anomalies/tax deductions), parse resumes/CVs,
-  scan IDs and passports (MRZ decoding), summarize medical records, redact PII and sensitive data (light/standard/full modes),
-  extract meeting minutes and action items, extract tables to CSV/JSON, translate documents, and scan/dewarp document photos.
-  Trigger: fill this form, autofill, review this contract, red flags, scan this receipt, log this expense,
-  analyze my bank statement, subscriptions, parse this resume, scan my passport, read my id, summarize this lab report,
-  redact this document, remove pii, anonymize, extract meeting minutes, action items, extract table, table to csv,
-  translate this document, scan this photo, make this look scanned, what is this document, analyze this.
+  Document intelligence: categorize, autofill forms, analyze contracts, scan receipts/invoices,
+  analyze bank statements, parse resumes/CVs, scan IDs/passports (MRZ), summarize medical records,
+  redact PII (light/standard/full, 50+ rule types, global coverage), extract meeting minutes/action
+  items, extract tables to CSV/JSON, translate documents, scan/dewarp document photos (edge detection,
+  perspective correction, scan-quality output).
+  Trigger: fill this form, autofill, review contract, red flags, scan receipt, log expense, bank
+  statement, subscriptions, parse resume, scan passport, read id, lab report, redact, remove pii,
+  anonymize, meeting minutes, action items, extract table, table to csv, translate, scan photo,
+  make scanned, dewarp, correct perspective, what is this, analyze this.
 allowed-tools: [Read, Write, Edit, Bash, Glob]
 ---
 
 # Doc-Process — Document Intelligence Skill
 
-## How Features Are Implemented
+## Overview
 
-Most features in this skill are implemented entirely through Claude's own vision and language capabilities — **no external libraries or scripts are involved**. A small number of optional modes delegate to Python scripts that have declared third-party dependencies.
-
-### Feature → Implementation Map
-
-| Feature | How it works | External libraries needed? |
-|---|---|---|
-| OCR / reading images | Claude's built-in vision (multimodal) | **None** |
-| MRZ decoding (passport/ID) | Claude reads MRZ visually, applies ICAO algorithm | **None** |
-| PDF reading | Claude reads PDF text layer or visually | **None** |
-| Form autofill | Claude reads form fields, outputs fill table | **None** |
-| Contract analysis | Claude reads document, applies reference rules | **None** |
-| Receipt scanning | Claude reads image/PDF | **None** |
-| Bank statement analysis (PDF) | Claude reads PDF pages | **None** |
-| Bank statement analysis (CSV) | `statement_parser.py` — pure stdlib | **None** |
-| Expense logging | `expense_logger.py` — pure stdlib | **None** |
-| Bank report generation | `report_generator.py` — pure stdlib | **None** |
-| Resume / CV parsing | Claude reads document | **None** |
-| Medical summarizer | Claude reads document | **None** |
-| Legal redaction (display) | Claude marks up output | **None** |
-| Legal redaction (file output) | `redactor.py` — pure stdlib | **None** |
-| Meeting minutes (text/PDF) | Claude reads document | **None** |
-| Translation | Claude's multilingual capabilities | **None** |
-| Document categorizer | Claude reads first 1–2 pages (with consent gate) | **None** |
-| Timeline logging | `timeline_manager.py` — pure stdlib | **None** |
-| **Table extraction from PDF** | `table_extractor.py` | **pdfplumber** (declared) |
-| **Audio transcription** | `audio_transcriber.py` | **openai-whisper + ffmpeg** (declared); whisper downloads model files from the internet on first run |
-| **Doc scan / image dewarping** | `doc_scanner.py` (doc-scan skill) | **opencv-python-headless, Pillow, numpy** (declared); img2pdf optional |
+This skill handles all document-related tasks using Claude's native vision/language capabilities for reading and analysis, and Python scripts for file-output operations. Most modes require **no installation** — only the file-output scripts need third-party libraries.
 
 ---
 
-## Dependencies & Install Spec
+## How Features Are Implemented
+
+| Feature | Implementation | External libraries |
+|---|---|---|
+| OCR / reading images | Claude built-in vision | None |
+| MRZ decoding (passport/ID) | Claude reads MRZ visually, applies ICAO algorithm | None |
+| PDF reading | Claude reads PDF text layer or visually | None |
+| Form autofill | Claude reads form fields, outputs fill table | None |
+| Contract analysis | Claude applies reference rule set | None |
+| Receipt / invoice scanning | Claude reads image or PDF | None |
+| Bank statement (PDF) | Claude reads PDF pages | None |
+| Bank statement (CSV) | `statement_parser.py` — pure stdlib | None |
+| Expense logging | `expense_logger.py` — pure stdlib | None |
+| Bank report generation | `report_generator.py` — pure stdlib | None |
+| Resume / CV parsing | Claude reads document | None |
+| Medical summarizer | Claude reads document | None |
+| Legal redaction (display) | Claude marks up output | None |
+| **Legal redaction (file output)** | `redactor.py` | **pymupdf** (PDF); **Pillow + pytesseract** (image) |
+| Meeting minutes (text/PDF) | Claude reads document | None |
+| Translation | Claude's multilingual capabilities | None |
+| Document categorizer | Claude reads first 1–2 pages (with consent gate) | None |
+| Timeline logging | `timeline_manager.py` — pure stdlib | None |
+| **Table extraction (PDF)** | `table_extractor.py` | **pdfplumber** |
+| **Audio transcription** | `audio_transcriber.py` | **openai-whisper + ffmpeg** |
+| **Doc scan / perspective correction** | `doc_scanner.py` | **opencv-python-headless, numpy, Pillow**; img2pdf optional |
+
+---
+
+## Dependencies & Installation
 
 ### No installation required for core functionality
-All document reading, analysis, form filling, contract review, receipt scanning, bank statement analysis (PDF), resume parsing, ID scanning, medical summarizing, redaction markup, meeting minutes extraction, and translation run on Claude's native capabilities. No Python packages need to be installed.
+Reading, analysis, form filling, contract review, receipt scanning, bank statement analysis (PDF), resume parsing, ID scanning, medical summarising, redaction markup, meeting minutes, and translation all run on Claude's built-in capabilities.
 
-### Optional dependencies (for script-assisted modes only)
-
-Install these only if you intend to use the listed scripts:
+### Optional — install only for file-output scripts
 
 ```bash
-# Table extraction from PDFs (table_extractor.py)
+# PII redaction to PDF/image files  (redactor.py)
+pip install pymupdf>=1.23          # required for PDF redaction
+pip install Pillow>=10.0           # required for image redaction
+pip install pytesseract>=0.3       # required for image redaction (also: brew install tesseract)
+
+# Document scanning / perspective correction  (doc_scanner.py)
+pip install opencv-python-headless>=4.9 numpy>=1.24 Pillow>=10.0
+pip install img2pdf>=0.5           # optional — for PDF output; Pillow fallback used if absent
+
+# Table extraction from PDFs  (table_extractor.py)
 pip install pdfplumber>=0.11
 
-# Audio transcription of meeting recordings (audio_transcriber.py)
-# Also requires ffmpeg — install separately: https://ffmpeg.org/download.html
+# Audio transcription  (audio_transcriber.py)
+# Also requires ffmpeg binary: brew install ffmpeg  /  apt install ffmpeg
 pip install openai-whisper>=20231117
-
-# Doc scan / perspective correction (doc_scanner.py in the doc-scan skill)
-pip install opencv-python-headless>=4.9 Pillow>=10.0 numpy>=1.24
-pip install img2pdf>=0.5  # optional — for PDF output; Pillow fallback used if absent
 ```
 
 All dependencies are also listed in `requirements.txt` at the repository root.
 
 ### Binary dependencies
 
-| Binary | Required by | How to install |
+| Binary | Required by | Install |
 |---|---|---|
-| `ffmpeg` | `audio_transcriber.py` | `brew install ffmpeg` / `apt install ffmpeg` / https://ffmpeg.org/download.html |
+| `tesseract` | `redactor.py` (image mode) | `brew install tesseract` / `apt install tesseract-ocr` |
+| `ffmpeg` | `audio_transcriber.py` | `brew install ffmpeg` / `apt install ffmpeg` |
 
-### Network access during setup
+### Network access
 
-- **`openai-whisper`** downloads model files from the internet on **first run only** (from OpenAI/HuggingFace servers). Subsequent runs use the cached model at `~/.cache/whisper/`. No network access after that.
-- All other scripts and features are fully local after installation.
+`openai-whisper` downloads model files (~140 MB) from OpenAI/HuggingFace servers **on first run only**. Cached at `~/.cache/whisper/`. All other scripts are fully local after installation.
 
-### Script import verification
+---
 
-| Script | Imports | Third-party? | Network? |
+## Script Reference
+
+| Script | Dependencies | Purpose | Example |
+|---|---|---|---|
+| `redactor.py` | pymupdf; Pillow + pytesseract (image mode) | PII redaction to file (PDF/image/text) | `python scripts/redactor.py --file doc.pdf --mode full --log` |
+| `doc_scanner.py` | opencv-python-headless, numpy, Pillow; img2pdf optional | Document scanning: edge detection, perspective correction, scan-quality output | `python scripts/doc_scanner.py --input photo.jpg --output scanned.png --mode bw` |
+| `expense_logger.py` | None | Add/list/edit/delete expense entries in CSV | `python scripts/expense_logger.py add --date 2024-03-15 --merchant "Starbucks" --amount 13.12 --file expenses.csv` |
+| `statement_parser.py` | None | Parse bank CSV export, categorize transactions | `python scripts/statement_parser.py --file statement.csv --output categorized.json` |
+| `report_generator.py` | None | Format categorized JSON into a markdown report | `python scripts/report_generator.py --file categorized.json --type bank` |
+| `timeline_manager.py` | None | Manage opt-in document processing timeline | `python scripts/timeline_manager.py show` |
+| `audio_transcriber.py` | openai-whisper, ffmpeg | Transcribe audio files to text | `python scripts/audio_transcriber.py --file meeting.mp3 --output transcript.txt` |
+| `table_extractor.py` | pdfplumber | Extract tables from PDFs to CSV or JSON | `python scripts/table_extractor.py --file document.pdf --output data.csv` |
+
+All scripts import only what they declare. Scripts with no declared deps use Python stdlib only. You can verify any script: "show me the source of [script name]".
+
+---
+
+## Script Import Verification
+
+| Script | Stdlib imports | Third-party | Network |
 |---|---|---|---|
 | `timeline_manager.py` | argparse, json, sys, datetime, pathlib, uuid, collections | None | Never |
-| `redactor.py` | argparse, re, sys, pathlib, dataclasses | None | Never |
+| `redactor.py` | argparse, re, sys, pathlib, dataclasses | pymupdf (PDF); Pillow + pytesseract (image) | Never |
+| `doc_scanner.py` | argparse, json, sys, time, pathlib | opencv-python-headless, numpy, Pillow; img2pdf optional | Never |
 | `expense_logger.py` | argparse, csv, json, sys, pathlib | None | Never |
 | `statement_parser.py` | argparse, csv, json, re, sys, collections, datetime, pathlib | None | Never |
 | `report_generator.py` | argparse, json, sys, collections, pathlib | None | Never |
 | `utils.py` | re, unicodedata, datetime, pathlib | None | Never |
-| `audio_transcriber.py` | argparse, sys, pathlib + **whisper** | **openai-whisper** | First-run model download only |
-| `table_extractor.py` | argparse, csv, io, json, sys, pathlib + **pdfplumber** | **pdfplumber** | Never |
-| `doc_scanner.py` | argparse, json, sys, time, pathlib + **cv2, numpy, PIL** | **opencv, Pillow, numpy** | Never |
-
-You can verify any script by saying "show me the source of [script name]" — the full file will be displayed.
+| `audio_transcriber.py` | argparse, sys, pathlib | openai-whisper | First-run model download only |
+| `table_extractor.py` | argparse, csv, io, json, sys, pathlib | pdfplumber | Never |
 
 ---
 
 ## Privacy & Data Handling
 
-| Aspect | What this skill does |
+| Aspect | Policy |
 |---|---|
-| **Document content** | Read locally within this session only. Not stored, indexed, or transmitted. |
-| **Personal data for form autofill** | Used only to complete the current form. Not written to any file. Not retained after session. |
-| **Timeline log** | Opt-in only. You are asked before any entry is written. Entries contain no raw document content — only category-level summaries. |
-| **Redacted output files** | Written only to a path you explicitly confirm. |
-| **Audio transcripts** | Written to a local file you specify. Model downloads on first Whisper use only. |
-| **No telemetry** | This skill has no analytics, usage reporting, or call-home behavior. |
+| Document content | Read locally within this session only. Not stored, indexed, or transmitted. |
+| Personal data for form autofill | Used only to complete the current form. Not written to any file. Not retained after session. |
+| Timeline log | Opt-in only. Confirmed by user before any entry is written. Contains no raw document content — only category-level summaries. |
+| Redacted output files | Written only to a path the user explicitly confirms. |
+| Audio transcripts | Written to a local file the user specifies. Model download on first Whisper use only. |
+| No telemetry | This skill has no analytics, usage reporting, or network calls beyond what is listed above. |
 
 ---
 
 ## Step 1 — Identify the Mode
 
-### Explicit Mode Selection
-If the user clearly states what they want, go directly to the matching mode:
+### Explicit intent → go directly to the matching mode
 
-| Mode | User Intent Signals | Typical File Types |
+| Mode | User intent signals | Typical file types |
 |---|---|---|
 | **Document Categorizer** | "process this", "what is this?", "analyze this", "help with this", no clear intent | Any |
 | Form Autofill | fill, autofill, fill out, complete this form | PDF form, image, screenshot |
-| Contract Analyzer | review, summarize, contract, agreement, risks, red flags | PDF, text |
+| Contract Analyzer | review, summarize, contract, agreement, risks, red flags, NDA, lease | PDF, text |
 | Receipt Scanner | receipt, invoice, log expense, scan this bill | Photo, image, PDF |
 | Bank Statement Analyzer | bank statement, transactions, subscriptions, categorize spending | PDF, CSV |
 | Resume / CV Parser | parse resume, extract cv, what's on this resume, scan resume | PDF, image, text |
@@ -130,15 +152,15 @@ If the user clearly states what they want, go directly to the matching mode:
 | Legal Redactor | redact, remove pii, anonymize, censor sensitive info | PDF, text, image |
 | Meeting Minutes | meeting minutes, action items, summarize meeting, transcribe meeting | Text, PDF, image, audio |
 | Table Extractor | extract table, table to csv, get data from pdf, table to json | PDF, image, text |
-| Document Translator | translate this, translate to [language], document translation | Any document |
+| Document Translator | translate this, translate to [language], document translation | Any |
 | Document Timeline | show my timeline, document history, what have I processed, save timeline | — |
-| Doc Scan | scan this photo, make this look scanned, correct perspective, clean this scan | Photo, image |
+| **Doc Scan** | scan this photo, make this look scanned, correct perspective, dewarp, clean this photo, digitize this, straighten this | Photo, image |
 
-### Ambiguous Intent → Document Categorizer (with consent gate)
+### Ambiguous intent → Document Categorizer (with consent gate)
 
-If the user uploads a file without a clear mode signal, **do not read the document yet**. First ask:
+If the user uploads a file without a clear mode signal, **do not read it yet**. Ask:
 
-> "I can classify this document automatically to suggest the best processing mode — that requires me to read the first 1–2 pages. Alternatively, you can choose directly:
+> "I can classify this document automatically to suggest the best mode — that requires me to read the first 1–2 pages. Or you can choose directly:
 >
 > | Option | Best for |
 > |---|---|
@@ -148,15 +170,16 @@ If the user uploads a file without a clear mode signal, **do not read the docume
 > | Bank Statement Analyzer | Bank/credit card statements |
 > | Resume Parser | CVs, resumes |
 > | ID Scanner | Passports, IDs, driver's licenses |
-> | Medical Summarizer | Lab reports, prescriptions, imaging |
+> | Medical Summarizer | Lab reports, prescriptions |
 > | Legal Redactor | Any document with PII to remove |
 > | Meeting Minutes | Notes or recordings |
 > | Table Extractor | Documents with data tables |
 > | Translator | Non-English documents |
+> | Doc Scan | Document photo needing perspective correction |
 >
-> Shall I classify it automatically, or which mode would you like?"
+> Shall I classify it, or which mode would you like?"
 
-Only read the document after the user says "classify it" / "figure it out" / chooses a mode.
+Only read the document after the user confirms.
 
 ---
 
@@ -164,16 +187,18 @@ Only read the document after the user says "classify it" / "figure it out" / cho
 
 Use the `Read` tool on the uploaded file. For images, read them visually. For PDFs over 10 pages, read in page ranges.
 
-**For audio files (meeting minutes mode only):** confirm before running — this requires `openai-whisper` and downloads a model on first run:
+**For audio files (Meeting Minutes mode only):** confirm before running — this requires `openai-whisper` and downloads a model on first run:
 
-> "Transcribing this audio file requires the `openai-whisper` library. On first use it will download a model file (~140 MB for the default 'base' model) from OpenAI's servers. Is that OK?"
+> "Transcribing this audio requires the `openai-whisper` library. On first use it downloads a model file (~140 MB). Is that OK?"
 
 If yes:
 ```bash
 python skills/doc-process/scripts/audio_transcriber.py --file <path> --output transcript.txt
 ```
 
-If no: ask if the user can provide a text transcript instead.
+If no: ask if the user can provide a text transcript.
+
+**For document photos (Doc Scan mode):** read the image visually first to assess quality and detect the document type before running the scanner script.
 
 ---
 
@@ -181,71 +206,158 @@ If no: ask if the user can provide a text transcript instead.
 
 Load and follow the matching reference file in full:
 
-- Document Categorizer → `references/document-categorizer.md`
-- Form Autofill → `references/form-autofill.md`
-- Contract Analyzer → `references/contract-analyzer.md`
-- Receipt Scanner → `references/receipt-scanner.md`
-- Bank Statement Analyzer → `references/bank-statement-analyzer.md`
-- Resume / CV Parser → `references/resume-parser.md`
-- ID & Passport Scanner → `references/id-scanner.md`
-- Medical Summarizer → `references/medical-summarizer.md`
-- Legal Redactor → `references/legal-redactor.md`
-- Meeting Minutes → `references/meeting-minutes.md`
-- Table Extractor → `references/table-extractor.md`
-- Document Translator → `references/document-translator.md`
-- Document Timeline → `references/document-timeline.md`
-- Doc Scan → handled by the `doc-scan` skill (separate skill)
+| Mode | Reference file |
+|---|---|
+| Document Categorizer | `references/document-categorizer.md` |
+| Form Autofill | `references/form-autofill.md` |
+| Contract Analyzer | `references/contract-analyzer.md` |
+| Receipt Scanner | `references/receipt-scanner.md` |
+| Bank Statement Analyzer | `references/bank-statement-analyzer.md` |
+| Resume / CV Parser | `references/resume-parser.md` |
+| ID & Passport Scanner | `references/id-scanner.md` |
+| Medical Summarizer | `references/medical-summarizer.md` |
+| Legal Redactor | `references/legal-redactor.md` |
+| Meeting Minutes | `references/meeting-minutes.md` |
+| Table Extractor | `references/table-extractor.md` |
+| Document Translator | `references/document-translator.md` |
+| Document Timeline | `references/document-timeline.md` |
+| **Doc Scan** | `references/doc-scan.md` |
 
 ---
 
-## Step 4 — Use Helper Scripts
+## Step 4 — Redactor: PII Rule Coverage
 
-| Script | Deps | Purpose | Example |
-|---|---|---|---|
-| `scripts/expense_logger.py` | None | Add/list/summarize/edit/delete expense CSV entries | `python scripts/expense_logger.py add --date 2024-03-15 --merchant "Starbucks" --amount 13.12 --file expenses.csv` |
-| `scripts/statement_parser.py` | None | Parse a bank CSV export and categorize transactions | `python scripts/statement_parser.py --file statement.csv --output categorized.json` |
-| `scripts/report_generator.py` | None | Format categorized JSON into a markdown report | `python scripts/report_generator.py --file categorized.json --type bank` |
-| `scripts/redactor.py` | None | Regex-based PII redaction on text files | `python scripts/redactor.py --file document.txt --output redacted.txt --mode full` |
-| `scripts/timeline_manager.py` | None | Manage the opt-in document processing timeline | `python scripts/timeline_manager.py show` |
-| `scripts/audio_transcriber.py` | **openai-whisper, ffmpeg** | Transcribe audio files to text | `python scripts/audio_transcriber.py --file meeting.mp3 --output transcript.txt` |
-| `scripts/table_extractor.py` | **pdfplumber** | Extract tables from PDFs to CSV or JSON | `python scripts/table_extractor.py --file document.pdf --output data.csv` |
+The `redactor.py` script covers the following PII categories across **50+ rule types** for global document types (bank statements, contracts, medical records, invoices, share-purchase agreements, government forms, and more).
 
-Scripts with no declared deps use only Python stdlib. Scripts with declared deps check for the library at import time and print a clear install instruction if it is missing.
+**Category 1 — Personal Identifiers** (standard + light mode)
+
+| Rule | Examples |
+|---|---|
+| SSN (US) | 123-45-6789 |
+| SIN (Canada) | 123-456-789 |
+| UK National Insurance Number | AB 12 34 56 C |
+| Australian TFN | 123 456 789 |
+| Australian Medicare number | 1234 56789 1 |
+| Indian Aadhaar | 1234 5678 9012 |
+| Passport number | A12345678 |
+| Driver's license | keyword-anchored |
+| UK NHS number | 943 476 5919 |
+| National / voter ID | keyword-anchored |
+| Vehicle VIN | keyword-anchored 17-char code |
+| NRIC (Singapore) | S1234567A |
+| Medical record (MRN) | keyword-anchored |
+| Indian PAN | AABCW6386P |
+| Email address | any@domain.com |
+| Phone number | all international formats; date/reference false-positives suppressed |
+| Street address | BLK/BLOCK/FLAT/UNIT/APT prefix + number + street name + type (Street, Ave, Rd, Hill, Close, Quay, Park, etc.) |
+| Unit / apartment number | #02-01, Unit 3B, Apt 4C, Flat 12 |
+| P.O. Box | PO Box 1234 |
+| US ZIP / CA postal | 10001, M5V 3A8 |
+| UK postcode | SW1A 2AA |
+| International 6-digit postal | Singapore 229572, Bangalore 560067 |
+| IPv4 address | 192.168.1.1 |
+| MAC address | AA:BB:CC:DD:EE:FF |
+| Date of birth | keyword + numeric/month-name formats |
+| Age | "Age: 34" |
+| Labeled name (50+ field keywords) | Bill To, Shipper, Attention, Buyer, Seller, Patient, Employee, Plaintiff, Trustee, Shareholder, Director, Tenant, Lender, Beneficiary, etc. |
+| Honorific prefix + name | Mr./Mrs./Ms./Dr./Prof./Rev./Hon./Mx. + name |
+
+**Category 2 — Financial Data** (standard + full mode)
+
+| Rule | Examples |
+|---|---|
+| Credit / debit card number | 4111 1111 1111 1111 |
+| Card CVV | CVV: 123 |
+| Card expiry | 03/26 |
+| Bank account number | keyword-anchored |
+| IBAN | IBAN country-code validated (GB, DE, FR, etc.) |
+| ABA / routing number | "Routing No." and "ABA No." |
+| UK Sort code | 20-00-00 |
+| Australian BSB | 063-000 |
+| Indian IFSC code | HDFC0000001 |
+| SWIFT / BIC code | allows space in code (e.g. CHAS US33) |
+| Salary / compensation | salary, CTC, gross/net pay, take-home, remuneration |
+| Credit score | keyword-anchored |
+| Loan / mortgage amount | keyword-anchored |
+| Tax figures | AGI, taxable income, tax paid |
+| Net worth / total assets | keyword-anchored |
+| Cryptocurrency wallet | Bitcoin, Ethereum |
+
+**Category 3 — Sensitive / Protected** (full mode only)
+
+HIV/AIDS status, blood type, mental health diagnoses (expanded), reproductive health, substance use history, sexual orientation / gender identity, disability, criminal record, genetic information, immigration status, minor's name, attorney–client privilege, trade secrets.
+
+### Redaction modes
+
+| Flag | Categories | Use case |
+|---|---|---|
+| `--mode light` | Cat 1 only | Sharing docs where financial details can remain |
+| `--mode standard` | Cat 1 + 2 (default) | General privacy protection |
+| `--mode full` | Cat 1 + 2 + 3 | Legal filings, healthcare, immigration, HR |
+| `--custom REGEX` | Cat 0 + selected mode | Domain-specific or proprietary terms |
+
+### How PDF redaction works
+
+1. Word bounding boxes are extracted from the PDF layout engine
+2. PII is detected using a single-pass, non-overlapping regex engine
+3. Matched spans are mapped back to word bounding boxes
+4. PyMuPDF redaction annotations (solid black fill) are placed on the exact word rects
+5. `apply_redactions()` burns the black fills in and removes the underlying text data from the content stream — redacted text cannot be copy-pasted or extracted
+6. The file is saved incrementally — every non-redacted element (fonts, images, vector graphics, metadata) is left completely untouched
+7. The original file is never modified; output is always a separate copy
 
 ---
 
-## Step 5 — Document Timeline (Opt-In)
+## Step 5 — Doc Scan: How It Works
 
-The timeline is off by default. Do not run `timeline_manager.py add` until the user has explicitly said yes to the consent prompt.
+The `doc_scanner.py` script converts a document photo into a professional scan in 7 steps:
 
-### Consent prompt (first document in a session)
-After completing the first document task, ask once:
+1. **Multi-strategy edge detection** — tries three approaches in order: (A) Canny on greyscale; (B) Morphological gradient; (C) Colour/brightness threshold. Stops at first success.
+2. **Sub-pixel corner refinement** — `cv2.cornerSubPix` makes the four corner points accurate to sub-pixel level for the most precise warp.
+3. **Perspective warp** — four-point transform using Lanczos interpolation flattens the document to a perfect rectangle.
+4. **Shadow removal** — per-channel background estimation + normalisation removes cast shadows and uneven lighting without affecting text.
+5. **Scan-quality enhancement** — mode-specific: BW = adaptive threshold (block size auto-scaled to resolution) + stroke repair + denoising; Gray = auto-levels + CLAHE + unsharp mask; Color = white-balance + CLAHE + sharpening.
+6. **Scanner border** — 8 px white border simulates scanner bed edge.
+7. **DPI-tagged output** — saved with embedded DPI metadata (default 300 DPI, print quality).
+
+### When auto-detection fails
+
+If the script reports `"corners_detected": false`:
+1. Offer manual corner hints: ask the user where the four corners of the document are approximately
+2. Use `--no-warp` to at least apply enhancement without perspective correction
+3. Provide photography tips (see `references/doc-scan.md` Step 8)
+
+---
+
+## Step 6 — Document Timeline (Opt-In)
+
+Off by default. After completing the first document task in a session, ask once:
 
 > "Would you like me to keep a processing log for this session? It records document type, filename, and a category-level summary (no raw content, no personal data) to `~/.doc-process-timeline.json` on your local machine. Entirely optional — yes or no."
 
-- **Yes** → confirm "Timeline logging is on." Log the current document and subsequent ones. Announce each with "Logged to your timeline."
+- **Yes** → confirm "Timeline logging is on." Log current and subsequent documents. Announce each with "Logged to your timeline."
 - **No** → confirm "No log will be kept." Do not run any timeline script. Do not ask again this session.
-- **No response / unsure** → treat as no.
+- **No response / unsure** → treat as No.
 
-### Summary rules (enforced)
-The `--summary` argument must not contain names, ID numbers, dates of birth, addresses, account numbers, card numbers, medical values, or any data that could identify a person. Use category-level descriptions only.
+**Summary rules (strictly enforced):** the `--summary` argument must never contain names, ID numbers, dates of birth, addresses, account numbers, card numbers, medical values, or any data that could identify a person. Category-level descriptions only.
 
 ---
 
-## Step 6 — Deliver Output
+## Step 7 — Deliver Output
 
-Present output in clean tables with section headers as specified in each reference file. Always end with an action prompt relevant to the mode.
+Present output in clean tables with section headers as specified in each reference file. Always end with an action prompt relevant to the mode. For Doc Scan, always offer to continue processing the scanned output.
 
 ---
 
 ## General Principles
 
-- **Categorize before asking** — but only after confirming the user wants auto-classification.
-- **Never hallucinate field values.** Unknown values are marked [MISSING] or [UNREADABLE].
-- **Flag risks conservatively**: when in doubt, include it.
+- **Never hallucinate field values.** Unknown values → `[MISSING]` or `[UNREADABLE]`.
+- **Flag risks conservatively** — when in doubt, include it.
 - **Keep summaries scannable** with tables and bullets.
 - **Do not echo sensitive data** beyond what is necessary for the immediate task.
 - **Always include relevant disclaimers** (medical, legal, privacy) where required by the reference guide.
 - **Timeline is opt-in per session.** Never log without confirmed consent.
 - **Personal data for form autofill is session-only.** Never write it to a file.
 - **Before running any script with third-party deps**, confirm the user has the library installed or is willing to install it.
+- **Categorize before asking** — but only after confirming the user wants auto-classification.
+- **For Doc Scan:** always assess the image visually first; never process non-document images.
