@@ -3,9 +3,15 @@
   "slug": "agent-bounty-scanner",
   "displayName": "Agent Bounty Scanner",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772587020009,
-    "commit": "https://github.com/openclaw/skills/commit/d3052ac62892e7a8797db11629089fd8f074e4d9"
+    "version": "1.0.1",
+    "publishedAt": 1772588279390,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772587020009,
+      "commit": "https://github.com/openclaw/skills/commit/d3052ac62892e7a8797db11629089fd8f074e4d9"
+    }
+  ]
 }
