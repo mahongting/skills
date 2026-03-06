@@ -1,7 +1,7 @@
 {
   "name": "innotech-polymarket-api",
-  "version": "1.0.0",
-  "description": "Polymarket API and data access guide. Learn how to connect to Polymarket APIs, find markets, get real-time data via WebSocket, access order books, and build prediction market applications.",
+  "version": "1.2.0",
+  "description": "Polymarket API and data access guide. Learn how to connect to Polymarket APIs, find markets, get real-time data via WebSocket, access order books with sizes, track liquidity, and build prediction market applications. Includes critical WebSocket data structure fixes and multi-crypto monitoring.",
   "main": "SKILL.md",
   "author": "Calvin Lam",
   "license": "MIT",
