@@ -1,0 +1,11 @@
+{
+  "owner": "wwek",
+  "slug": "feishu-voice-sender",
+  "displayName": "飞书语音消息发送",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772768915942,
+    "commit": null
+  },
+  "history": []
+}
