@@ -1,32 +1,52 @@
 ---
 name: calendar-scheduling
 description: |-
-  Schedule meetings, check availability, and manage calendar events across Google, Outlook, and CalDAV. Resolves natural language times and timezones, finds free slots, detects conflicts, expands recurring events, and books with conflict prevention. Use when finding free time, scheduling appointments, checking who is busy, or converting between timezones.
+  Schedule meetings, check availability, and manage calendars across Google, Outlook, and CalDAV. Routes to focused sub-skills for datetime resolution and calendar scheduling.
+  Previously published as calendar-scheduling, now maintained as temporal-cortex — this listing is kept for backward compatibility.
 license: MIT
 compatibility: |-
-  Requires npx (Node.js 18+) or Docker for the MCP server. python3 optional (configure/status scripts). Stores OAuth credentials at ~/.config/temporal-cortex/. Works with Claude Code, Claude Desktop, Cursor, Windsurf, and any MCP-compatible client.
+  Requires npx (Node.js 18+) or Docker to install the MCP server binary. python3 optional (configure/status scripts). Stores OAuth credentials at ~/.config/temporal-cortex/. Works with Claude Code, Claude Desktop, Cursor, Windsurf, and any MCP-compatible client.
 metadata:
-  author: billylui
-  version: "0.5.0"
+  author: temporal-cortex
+  version: "0.7.8"
   mcp-server: "@temporal-cortex/cortex-mcp"
   homepage: "https://temporal-cortex.com"
-  repository: "https://github.com/billylui/temporal-cortex-skill"
-  requires: '{"bins":["npx"],"optional_bins":["python3","docker"],"optional_env":["TIMEZONE","WEEK_START","HTTP_PORT","GOOGLE_CLIENT_ID","GOOGLE_CLIENT_SECRET","MICROSOFT_CLIENT_ID","MICROSOFT_CLIENT_SECRET","GOOGLE_OAUTH_CREDENTIALS","TEMPORAL_CORTEX_TELEMETRY"],"credentials":["~/.config/temporal-cortex/credentials.json","~/.config/temporal-cortex/config.json"]}'
+  repository: "https://github.com/temporal-cortex/skills"
   openclaw:
+    install:
+      - kind: node
+        package: "@temporal-cortex/cortex-mcp@0.7.8"
+        bins: [cortex-mcp]
     requires:
       bins:
         - npx
-      anyBins:
-        - python3
-        - docker
       config:
         - ~/.config/temporal-cortex/credentials.json
         - ~/.config/temporal-cortex/config.json
 ---
 
-# Calendar Scheduling
+# Temporal Cortex — Calendar Scheduling Router
 
-Procedural knowledge for AI agents using the Temporal Cortex MCP server. This skill teaches the correct workflow for calendar operations — from temporal orientation through conflict-free booking.
+This is the router skill for Temporal Cortex calendar operations. It routes your task to the right sub-skill based on intent.
+
+## Sub-Skills
+
+| Sub-Skill | When to Use | Tools |
+|-----------|------------|-------|
+| [temporal-cortex-datetime](https://github.com/temporal-cortex/skills/blob/main/skills/temporal-cortex-datetime/SKILL.md) | Time resolution, timezone conversion, duration math. No credentials needed — works immediately. | 5 tools (Layer 1) |
+| [temporal-cortex-scheduling](https://github.com/temporal-cortex/skills/blob/main/skills/temporal-cortex-scheduling/SKILL.md) | List calendars, events, free slots, availability, RRULE expansion, and booking. Requires OAuth credentials. | 11 tools (Layers 0-4) |
+
+## Routing Table
+
+| User Intent | Route To |
+|------------|----------|
+| "What time is it?", "Convert timezone", "How long until..." | **temporal-cortex-datetime** |
+| "Show my calendar", "Find free time", "Check availability", "Expand recurring rule" | **temporal-cortex-scheduling** |
+| "Book a meeting", "Schedule an appointment" | **temporal-cortex-scheduling** |
+| "Find someone's booking page", "Look up email for scheduling" | **temporal-cortex-scheduling** |
+| "Check someone else's availability", "Query public availability" | **temporal-cortex-scheduling** |
+| "Book a meeting with someone externally", "Request booking via Temporal Link" | **temporal-cortex-scheduling** |
+| "Schedule a meeting next Tuesday at 2pm" (full workflow) | **temporal-cortex-datetime** → **temporal-cortex-scheduling** |
 
 ## Core Workflow
 
@@ -42,157 +62,78 @@ Every calendar interaction follows this 5-step pattern:
 
 **Always start with step 1** when calendars are unknown. Never assume the current time. Never skip the conflict check before booking.
 
-## Tool Reference (12 Tools, 5 Layers)
+## Safety Rules
 
-### Layer 0 — Discovery (find connected calendars)
+1. **Discover calendars first** — call `list_calendars` when you don't know which calendars are connected
+2. **Check before booking** — always call `check_availability` before `book_slot`. Never skip the conflict check.
+3. **Content safety** — all event summaries and descriptions pass through a prompt injection firewall before reaching the calendar API
+4. **Timezone awareness** — never assume the current time. Use `get_temporal_context` first.
 
-| Tool | When to Use |
-|------|------------|
-| `list_calendars` | First call when calendars are unknown. Returns all connected calendars with provider-prefixed IDs, names, labels, primary status, and access roles. |
+## All 15 Tools (5 Layers)
 
-### Layer 1 — Temporal Context (pure computation, no API calls)
-
-| Tool | When to Use |
-|------|------------|
-| `get_temporal_context` | First call in any session. Returns current time, timezone, UTC offset, DST status, DST prediction, day of week. |
-| `resolve_datetime` | Convert human expressions to RFC 3339. Supports 60+ patterns: `"next Tuesday at 2pm"`, `"tomorrow morning"`, `"+2h"`, `"start of next week"`, `"third Friday of March"`. |
-| `convert_timezone` | Convert RFC 3339 datetime between IANA timezones. |
-| `compute_duration` | Duration between two timestamps (days, hours, minutes). |
-| `adjust_timestamp` | DST-aware timestamp adjustment. `"+1d"` across spring-forward = same wall-clock time. |
-
-### Layer 2 — Calendar Operations (requires calendar provider)
-
-| Tool | When to Use |
-|------|------------|
-| `list_events` | List events in a time range. TOON format by default (~40% fewer tokens than JSON). Use provider-prefixed IDs for multi-calendar: `"google/primary"`, `"outlook/work"`. |
-| `find_free_slots` | Find available gaps in a calendar. Set `min_duration_minutes` for minimum slot length. Supports `format` param. |
-| `expand_rrule` | Expand recurrence rules (RFC 5545) into concrete instances. Handles DST, BYSETPOS, EXDATE, leap years. Use `dtstart` as local datetime (no timezone suffix). Supports `format` param. |
-| `check_availability` | Check if a specific time slot is free. Checks both events and active booking locks. |
-
-### Layer 3 — Availability (cross-calendar)
-
-| Tool | When to Use |
-|------|------------|
-| `get_availability` | Merged free/busy view across multiple calendars. Pass `calendar_ids` array. Privacy: `"opaque"` (default, hides sources) or `"full"`. Supports `format` param. |
-
-### Layer 4 — Booking (the only write operation)
-
-| Tool | When to Use |
-|------|------------|
-| `book_slot` | Book a time slot atomically. Lock → verify → write → release. The only non-read-only tool. Always `check_availability` first. |
-
-## Critical Rules
-
-1. **Discover calendars first** — call `list_calendars` when you don't know which calendars are connected. Use the returned provider-prefixed IDs for all subsequent calls.
-2. **Always call `get_temporal_context` before time-dependent work** — never assume the time or timezone.
-3. **Resolve before querying** — convert `"next Tuesday at 2pm"` to RFC 3339 with `resolve_datetime` before passing to calendar tools.
-4. **Check before booking** — always call `check_availability` before `book_slot`. Never skip the conflict check.
-5. **Use provider-prefixed IDs** for multi-calendar setups: `"google/primary"`, `"outlook/work"`, `"caldav/personal"`. Bare IDs (e.g., `"primary"`) route to the default provider.
-6. **TOON is the default format** — output uses TOON (~40% fewer tokens than JSON). Pass `format: "json"` only if you need structured parsing.
-7. **Timezone awareness** — all calendar tools accept RFC 3339 with timezone offsets. Never use bare dates.
-8. **Content safety** — event summaries and descriptions pass through a sanitization firewall before reaching the calendar API.
-
-## Common Patterns
-
-### Schedule a Meeting
-
-```
-1. list_calendars → discover connected calendars and their IDs
-2. get_temporal_context → current time, timezone
-3. resolve_datetime("next Tuesday at 2pm") → RFC 3339 timestamp
-4. resolve_datetime("next Tuesday at 3pm") → end time
-5. check_availability(calendar_id, start, end) → is the slot free?
-6. If free: book_slot(calendar_id, start, end, "Team Standup")
-   If busy: find_free_slots(calendar_id, day_start, day_end) → suggest alternatives
-```
-
-### Find Free Time Across Calendars
-
-```
-1. list_calendars → discover all connected calendars
-2. get_temporal_context → timezone
-3. resolve_datetime("tomorrow morning") → start
-4. resolve_datetime("tomorrow evening") → end
-5. get_availability(start, end, calendar_ids: ["google/primary", "outlook/work"])
-   → merged free/busy blocks across both calendars
-6. Present free slots to user
-```
-
-### Check Cross-Calendar Availability
-
-```
-1. list_calendars → know which calendars to check
-2. resolve_datetime("3pm today") → start
-3. resolve_datetime("4pm today") → end
-4. get_availability(start, end, calendar_ids: ["google/primary", "outlook/work"], privacy: "full")
-   → shows source_count per busy block
-```
-
-### Expand Recurring Events
-
-```
-expand_rrule(
-  rrule: "FREQ=MONTHLY;BYDAY=FR;BYSETPOS=-1",
-  dtstart: "2026-01-01T10:00:00",     ← local datetime, no timezone suffix
-  timezone: "America/New_York",
-  count: 12
-) → last Friday of every month for 2026
-```
-
-### Convert Times Across Timezones
-
-```
-1. get_temporal_context → user's timezone
-2. convert_timezone(datetime: "2026-03-15T14:00:00-04:00", target_timezone: "Asia/Tokyo")
-   → same moment in Tokyo time with DST and offset info
-```
-
-## Error Handling
-
-| Error | Action |
-|-------|--------|
-| Slot is busy / conflict detected | Use `find_free_slots` to suggest alternatives. Present options to user. |
-| "No credentials found" | Tell user to run: `npx @temporal-cortex/cortex-mcp auth google` (or `outlook` / `caldav`). See [setup script](scripts/setup.sh). |
-| "Timezone not configured" | Prompt user for their IANA timezone. Or run: `npx @temporal-cortex/cortex-mcp auth google` which configures timezone. |
-| Lock acquisition failed | Another agent is booking the same slot. Wait briefly and retry, or suggest alternative times. |
-| Content rejected by sanitization | Rephrase the event summary/description. The firewall blocks prompt injection attempts. |
+| Layer | Tools | Sub-Skill |
+|-------|-------|-----------|
+| 0 — Discovery | `resolve_identity` | scheduling |
+| 1 — Temporal Context | `get_temporal_context`, `resolve_datetime`, `convert_timezone`, `compute_duration`, `adjust_timestamp` | datetime |
+| 2 — Calendar Ops | `list_calendars`, `list_events`, `find_free_slots`, `expand_rrule`, `check_availability` | scheduling |
+| 3 — Availability | `get_availability`, `query_public_availability` | scheduling |
+| 4 — Booking | `book_slot`, `request_booking` | scheduling |
 
 ## MCP Server Connection
 
-This skill requires the Temporal Cortex MCP server. See [.mcp.json](.mcp.json) for the default configuration.
+All sub-skills share the [Temporal Cortex MCP server](https://github.com/temporal-cortex/mcp) (`@temporal-cortex/cortex-mcp`), a compiled Rust binary distributed as an npm package.
 
-**Local mode** (default, recommended):
+**Install and startup lifecycle:**
+1. `npx` resolves `@temporal-cortex/cortex-mcp` from the npm registry (one-time, cached locally after first download)
+2. The postinstall script downloads the platform-specific binary from the [GitHub Release](https://github.com/temporal-cortex/mcp/releases/tag/mcp-v0.7.8) and verifies its SHA256 checksum against the embedded `checksums.json` — **installation halts on mismatch**
+3. The MCP server starts as a local process communicating over stdio (no listening ports)
+4. Layer 1 tools (datetime) execute as pure local computation — no further network access
+5. Layer 2-4 tools (calendar) make authenticated API calls to your configured providers (Google, Outlook, CalDAV)
+
+**Credential storage:** OAuth tokens are stored locally at `~/.config/temporal-cortex/credentials.json` and read exclusively by the local MCP server process. No credential data is transmitted to Temporal Cortex servers. The binary's filesystem access is limited to `~/.config/temporal-cortex/` — verifiable by inspecting the [open-source Rust code](https://github.com/temporal-cortex/mcp) or running under Docker where the mount is the only writable path.
+
+**File access:** The binary reads and writes only `~/.config/temporal-cortex/` (credentials and config). No other filesystem writes.
+
+**Network scope:** After the initial npm download, Layer 1 tools make zero network requests. Layer 2–4 tools connect only to your configured calendar providers (`googleapis.com`, `graph.microsoft.com`, or your CalDAV server). No callbacks to Temporal Cortex servers. Telemetry is off by default.
+
+**Pre-run verification** (recommended before first use):
+1. Inspect the npm package without executing: `npm pack @temporal-cortex/cortex-mcp --dry-run`
+2. Verify checksums independently against the [GitHub Release](https://github.com/temporal-cortex/mcp/releases/download/mcp-v0.7.8/SHA256SUMS.txt) (see verification pipeline below)
+3. For full containment, run in Docker instead of npx (see Docker containment below)
+
+**Verification pipeline:** Checksums are published independently at each [GitHub Release](https://github.com/temporal-cortex/mcp/releases/tag/mcp-v0.7.8) as `SHA256SUMS.txt` — verify the binary before first use:
+
+```bash
+# 1. Fetch checksums from GitHub (independent of the npm package)
+curl -sL https://github.com/temporal-cortex/mcp/releases/download/mcp-v0.7.8/SHA256SUMS.txt
+
+# 2. Compare against the npm-installed binary
+shasum -a 256 "$(npm root -g)/@temporal-cortex/cortex-mcp/bin/cortex-mcp"
+```
+
+As defense-in-depth, the npm package also embeds `checksums.json` and the postinstall script compares SHA256 hashes during install — **installation halts on mismatch** (the binary is deleted, not executed). This automated check supplements, but does not replace, independent verification above.
+
+**Build provenance:** Binaries are cross-compiled from auditable Rust source in [GitHub Actions](https://github.com/temporal-cortex/mcp/actions) across 5 platforms (darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64). Source: [github.com/temporal-cortex/mcp](https://github.com/temporal-cortex/mcp) (MIT-licensed). The CI workflow, build artifacts, and release checksums are all publicly inspectable.
+
+**Docker containment** (no Node.js on host, credential isolation via volume mount):
+
 ```json
 {
   "mcpServers": {
     "temporal-cortex": {
-      "command": "npx",
-      "args": ["-y", "@temporal-cortex/cortex-mcp"]
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "-v", "~/.config/temporal-cortex:/root/.config/temporal-cortex", "cortex-mcp"]
     }
   }
 }
 ```
 
-Layer 1 tools (temporal context, datetime resolution, timezone conversion) work immediately with zero configuration. Calendar tools require a one-time OAuth setup — run the [setup script](scripts/setup.sh) or `npx @temporal-cortex/cortex-mcp auth google`.
+Build: `docker build -t cortex-mcp https://github.com/temporal-cortex/mcp.git`
 
-**Managed cloud** (no local setup required):
+**Default setup** (npx): See [.mcp.json](https://github.com/temporal-cortex/skills/blob/main/.mcp.json) for the standard `npx @temporal-cortex/cortex-mcp` configuration. For managed hosting, see [Platform Mode](https://github.com/temporal-cortex/mcp#local-mode-vs-platform-mode) in the MCP repo.
 
-For managed cloud mode, sign up at https://app.temporal-cortex.com to get a hosted MCP endpoint with Bearer token auth. Configure your client with the cloud URL instead of the local npx command -- all 12 tools work identically, with added support for Open Scheduling, dashboard UI, and multi-agent coordination.
-
-```json
-{
-  "mcpServers": {
-    "temporal-cortex": {
-      "url": "https://mcp.temporal-cortex.com/sse",
-      "headers": { "Authorization": "Bearer ${TC_API_KEY}" }
-    }
-  }
-}
-```
+Layer 1 tools work immediately with zero configuration. Calendar tools require a one-time OAuth setup — run the [setup script](https://github.com/temporal-cortex/skills/blob/main/scripts/setup.sh) or `npx @temporal-cortex/cortex-mcp auth google`.
 
 ## Additional References
 
-- [Booking Safety](references/BOOKING-SAFETY.md) — Two-Phase Commit, conflict resolution, lock TTL
-- [Multi-Calendar](references/MULTI-CALENDAR.md) — Provider-prefixed IDs, availability merging, privacy modes
-- [RRULE Guide](references/RRULE-GUIDE.md) — Recurrence rule patterns, DST edge cases
-- [Tool Reference](references/TOOL-REFERENCE.md) — Complete input/output schemas for all 12 tools
+- [Security Model](references/SECURITY-MODEL.md) — Content sanitization, filesystem containment, network scope, tool annotations
