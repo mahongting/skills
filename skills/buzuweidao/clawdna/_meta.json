@@ -3,11 +3,16 @@
   "slug": "clawdna",
   "displayName": "Clawdna",
   "latest": {
-    "version": "0.1.3",
-    "publishedAt": 1772734100224,
-    "commit": "https://github.com/openclaw/skills/commit/249b1033ef97fc7428020d13c324d0c5c7f96f80"
+    "version": "0.1.4",
+    "publishedAt": 1772734514126,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.3",
+      "publishedAt": 1772734100224,
+      "commit": "https://github.com/openclaw/skills/commit/249b1033ef97fc7428020d13c324d0c5c7f96f80"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1772733395046,

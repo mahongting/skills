@@ -1,127 +1,81 @@
 ---
 name: clawdna
-description: Generate a public, privacy-safe wiki-style profile from full OpenClaw history when the user explicitly asks to run ClawDNA.
+description: Generate a public, privacy-safe persona/card/wiki lead from historical behavior when the user explicitly asks to run ClawDNA.
 ---
 
 # ClawDNA
 
 ## Goal
-Generate a concise, interesting, wiki-style profile from full historical behavior.
-Output must be factual, standardized, and privacy-safe.
+Create a concise public profile based on real historical behavior, not guesses.
 
-## When to Use
-Trigger this skill **only** on explicit user intent, such as:
+## Trigger
+Run only on explicit user intent, such as:
 - `use ClawDNA`
 - `/clawdna`
 - `generate with ClawDNA`
 
-Do not auto-trigger from generic bio/profile requests.
+Do not auto-trigger from generic chat.
 
-## Required Tools
-- `jq` (required)
-- `rg` or `grep` (recommended)
+## Safety Mode (Default)
+Default to minimal analysis scope.
+- Prefer user-provided summaries/history exports when available.
+- If local history access is needed, request explicit confirmation first.
 
-If `jq` is unavailable, stop and ask the user to install it before continuing.
-
-## Mandatory Data Scope
-Default scope (minimal): recent window only.
-Full-history mode requires explicit user confirmation in the current request.
-
-Allowed paths only:
+## Allowed Data Scope
+Only these locations are in scope:
 1. `~/.openclaw/agents/<runtime-agent-id>/sessions/*.jsonl`
 2. `memory/*.md`
-3. `MEMORY.md` (only when allowed in the current context)
+3. `MEMORY.md` (only if allowed in current context)
 
-Scope controls:
-- Use current runtime agent id only.
-- Do not read other agents' logs unless user explicitly asks and confirms.
-- Do not expand to additional directories automatically.
-- If required paths are missing, ask before changing scope.
+Never auto-expand to other directories.
+Never access other agents' logs without explicit user consent.
 
 ## Non-Negotiable Rules
-1. No speculation. If unsupported, omit.
+1. No speculation; omit unsupported claims.
 2. Public privacy output only (redacted by default).
-3. Show time span only in coverage note (no file-count disclosure).
-4. Output language follows the user's current language by default.
-5. Keep proper nouns/agent names in original form (no translation of names).
-6. `Core Capabilities` and `Representative Work` must be titles only.
-7. Avoid rigid wording like “OpenClaw instance” in final prose.
-8. Data minimization: extract only fields needed for the profile, keep no raw-log copies, and do not output raw transcript excerpts.
+3. Show time span only in coverage note (no file count).
+4. Output language follows user language.
+5. Proper nouns/names stay in original form.
+6. `Core Capabilities` and `Representative Work` are title-only.
+7. Data minimization: extract only fields needed for profile.
+8. Do not output raw transcript excerpts.
 
-## Context Overflow Strategy
-When history is too large:
-1. Build metadata index first (do not load all raw text at once).
-2. Process by time chunks (week/month).
-3. Produce fixed-format chunk summaries.
-4. Merge chunk summaries (map-reduce style).
-5. Keep cross-window high-frequency patterns when conflicts appear.
-
-## Core Commands
-```bash
-# message events
-jq -c 'select(.type=="message")' ~/.openclaw/agents/<agentId>/sessions/*.jsonl
-
-# assistant text
-jq -r 'select(.type=="message" and .message.role=="assistant")
-| .message.content[]? | select(.type=="text") | .text' \
-~/.openclaw/agents/<agentId>/sessions/*.jsonl
-
-# tool calls (action signals)
-jq -r 'select(.type=="message" and .message.role=="assistant")
-| .message.content[]? | select(.type=="toolCall")
-| "\(.name)\t\(.arguments|tostring)"' \
-~/.openclaw/agents/<agentId>/sessions/*.jsonl
-
-# time span
-jq -r '.timestamp // empty' ~/.openclaw/agents/<agentId>/sessions/*.jsonl \
-| sort | sed -n '1p;$p'
-```
+## Large-History Strategy
+If history is too large:
+1. Build metadata index first.
+2. Process by time chunks.
+3. Summarize each chunk with fixed fields.
+4. Merge summaries and keep cross-window repeated patterns.
 
 ## Extraction Method
-Step 1: Build full index
-- first active timestamp
-- latest active timestamp
-- interaction surfaces
-- recurring action clusters
-
-Step 2: Broad action recognition
-- Execution: edit/fix/deploy/restart/cleanup/release
-- Collaboration: reply/thread/split/coordinate/follow-up
-- Analysis: search/compare/evaluate/summarize/review
-- Operations: monitor/alert/healthcheck/recovery/stability
-- Creation: write/generate/design/propose/script
-- Governance: confirm/risk-gate/privacy-redaction/boundary
-
-Step 3: Stability filtering
-- Keep only repeated cross-window patterns.
-- Single events cannot become persona traits.
-
-Step 4: Privacy redaction
-- Remove secrets, direct identifiers, and sensitive internal references.
-
-Step 5: Section mapping
-- Map stable signals to the fixed output template.
+1. Build timeline bounds (first/last active).
+2. Detect recurring behavior signals across windows:
+   - execution
+   - collaboration
+   - analysis
+   - operations
+   - creation
+   - governance/boundaries
+3. Keep only stable repeated patterns.
+4. Redact sensitive details.
+5. Map to fixed output template.
 
 ## Output
 Return one Markdown display profile only.
-Do not output audit appendix.
+No audit appendix.
 
 ## Fixed Output Template
-
-Use section labels in one language only (the output language).
-Do not output bilingual headings.
-
 # {{Name}}
 
 ## {{LeadLabel}}
-{{1 paragraph: identity + start time + stable traits + value}}
+{{identity + start time + stable traits + value}}
 
 ## {{InfoboxLabel}}
 - {{NameLabel}}: {{}}
 - {{TypeLabel}}: {{execution/creative/analysis/operations/hybrid}}
 - {{FirstActivationLabel}}: {{YYYY-MM-DD}}
 - {{ActiveTimeSpanLabel}}: {{Start ~ Now}}
-- {{TotalTokensLabel}}: {{optional; include only if reliably available}}
+- {{TotalTokensLabel}}: {{optional, only if reliably available}}
 - {{PrimaryDomainsLabel}}: {{max 3}}
 - {{InteractionStyleLabel}}: {{}}
 - {{CollaborationModeLabel}}: {{}}
@@ -138,7 +92,7 @@ Do not output bilingual headings.
 - {{}}
 
 ## {{PersonalitySnapshotLabel}}
-{{2-3 short behavior-based sentences}}
+{{2-3 behavior-based sentences}}
 
 ## {{CoreCapabilitiesLabel}}
 - {{title only}}
@@ -172,8 +126,8 @@ Do not output bilingual headings.
 Preset persona = initial intent; long-term behavior = real persona; user habits = persona shaper.
 
 ## Final Checks
-- Full history used (not recent-only)
+- Explicit trigger confirmed
+- Scope consent confirmed if local logs used
 - No speculative claims
-- Core Capabilities and Representative Work are title-only
+- Title-only for capabilities/work
 - Privacy-safe wording
-- Coverage includes time span only
