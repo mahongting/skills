@@ -1,0 +1,41 @@
+{
+  "name": "cryptowatch",
+  "version": "1.0.0",
+  "description": "₿ CryptoWatch - 实时监控加密货币价格，价格突破自动预警",
+  "main": "scripts/watch.mjs",
+  "type": "module",
+  "scripts": {
+    "watch": "node scripts/watch.mjs",
+    "watch:btc": "node scripts/watch.mjs btc",
+    "watch:eth": "node scripts/watch.mjs eth",
+    "watch:top": "node scripts/watch.mjs --top 20",
+    "alert": "node scripts/alert.mjs",
+    "alert:list": "node scripts/alert.mjs --list",
+    "test": "node scripts/watch.mjs btc,eth,sol"
+  },
+  "keywords": [
+    "crypto",
+    "price",
+    "bitcoin",
+    "ethereum",
+    "monitoring",
+    "alert",
+    "defi",
+    "finance"
+  ],
+  "author": "@gztanht",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gztanht/cryptowatch"
+  },
+  "homepage": "https://clawhub.com/skills/cryptowatch",
+  "funding": {
+    "type": "crypto",
+    "usdt": "0x33f943e71c7b7c4e88802a68e62cca91dab65ad9",
+    "usdc": "0xcb5173e3f5c2e32265fbbcaec8d26d49bf290e44"
+  }
+}
