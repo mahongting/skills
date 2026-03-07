@@ -1,0 +1,11 @@
+{
+  "owner": "nissan",
+  "slug": "agent-budget-governance",
+  "displayName": "Agent Budget Governance",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772823920025,
+    "commit": null
+  },
+  "history": []
+}
