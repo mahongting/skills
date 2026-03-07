@@ -3,11 +3,16 @@
   "slug": "slack-api",
   "displayName": "Slack",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1770755709667,
-    "commit": "https://github.com/openclaw/skills/commit/da9d76ec3ea8444e8de6c1d4ad3b4844a2a998b7"
+    "version": "1.0.8",
+    "publishedAt": 1772836998074,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1770755709667,
+      "commit": "https://github.com/openclaw/skills/commit/da9d76ec3ea8444e8de6c1d4ad3b4844a2a998b7"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1770344352153,
