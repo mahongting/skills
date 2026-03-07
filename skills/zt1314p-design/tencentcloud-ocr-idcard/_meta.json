@@ -1,0 +1,11 @@
+{
+  "owner": "zt1314p-design",
+  "slug": "tencentcloud-ocr-idcard",
+  "displayName": "tencentcloud-ocr-idcard",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772815769529,
+    "commit": null
+  },
+  "history": []
+}
