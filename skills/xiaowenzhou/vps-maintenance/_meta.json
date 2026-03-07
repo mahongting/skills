@@ -1,0 +1,11 @@
+{
+  "owner": "xiaowenzhou",
+  "slug": "vps-maintenance",
+  "displayName": "VPS 维护配置",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772845812661,
+    "commit": null
+  },
+  "history": []
+}
