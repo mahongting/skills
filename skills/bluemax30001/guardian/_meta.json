@@ -1,13 +1,18 @@
 {
   "owner": "bluemax30001",
   "slug": "guardian",
-  "displayName": "Guardian",
+  "displayName": "Guardian Release 2.4.3",
   "latest": {
-    "version": "2.4.1",
-    "publishedAt": 1772484461602,
-    "commit": "https://github.com/openclaw/skills/commit/08ff9c4c3b83dfedfb09c8f81947e703dc7a7db1"
+    "version": "2.4.3",
+    "publishedAt": 1772880508420,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.4.1",
+      "publishedAt": 1772484461602,
+      "commit": "https://github.com/openclaw/skills/commit/08ff9c4c3b83dfedfb09c8f81947e703dc7a7db1"
+    },
     {
       "version": "2.3.4",
       "publishedAt": 1772445312238,

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "guardian-ai"
-version = "2.3.4"
+version = "2.4.3"
 description = "Standalone AI security engine for prompt injection and tool abuse defense"
 readme = "README.md"
 requires-python = ">=3.8"

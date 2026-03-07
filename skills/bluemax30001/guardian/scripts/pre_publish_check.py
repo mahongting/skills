@@ -5,7 +5,7 @@ Pre-publish safety gate for Guardian ClawHub packaging.
 Usage: python3 scripts/pre_publish_check.py [--path /path/to/skill]
 
 Scans all files that would be included in a clawhub publish and checks for:
-  - Hex/token-like strings >= 40 chars (pure hex, no underscores)
+  - Hex/token-like strings >24 chars (pure hex)
   - Known secret values from ~/.openclaw/openclaw.json (>16 chars, no underscores)
   - Files in audit_exports/ directory
   - .db files
@@ -109,8 +109,11 @@ def _looks_like_secret(value: str) -> bool:
 
 def load_env_values(min_len: int = 16) -> list[str]:
     """
-    Read ~/.openclaw/openclaw.json and return string values > min_len
-    that look like actual secrets (not config keys or identifiers).
+    Read ~/.openclaw/openclaw.json and return likely secret values.
+
+    Preference order:
+      1) Explicit env-like sections/keys (env, environment, *_env)
+      2) Fallback: any nested string values that look like secrets
     """
     config_path = Path.home() / ".openclaw" / "openclaw.json"
     if not config_path.exists():
@@ -120,20 +123,50 @@ def load_env_values(min_len: int = 16) -> list[str]:
     except Exception:
         return []
 
-    values = []
+    values: list[str] = []
 
-    def _extract(obj):
+    def _add_if_secret(v):
+        if isinstance(v, str) and len(v) > min_len and _looks_like_secret(v):
+            values.append(v)
+
+    def _extract_env_sections(obj):
         if isinstance(obj, dict):
-            for v in obj.values():
-                _extract(v)
+            for k, v in obj.items():
+                key = str(k).lower()
+                if key in {"env", "environment"} or key.endswith("_env"):
+                    if isinstance(v, dict):
+                        for env_v in v.values():
+                            _add_if_secret(env_v)
+                    elif isinstance(v, list):
+                        for env_v in v:
+                            _add_if_secret(env_v)
+                _extract_env_sections(v)
         elif isinstance(obj, list):
             for item in obj:
-                _extract(item)
-        elif isinstance(obj, str) and len(obj) > min_len and _looks_like_secret(obj):
-            values.append(obj)
+                _extract_env_sections(item)
 
-    _extract(data)
-    return values
+    def _extract_all_strings(obj):
+        if isinstance(obj, dict):
+            for v in obj.values():
+                _extract_all_strings(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                _extract_all_strings(item)
+        else:
+            _add_if_secret(obj)
+
+    _extract_env_sections(data)
+    if not values:
+        _extract_all_strings(data)
+
+    # De-duplicate while preserving order
+    seen = set()
+    unique = []
+    for v in values:
+        if v not in seen:
+            seen.add(v)
+            unique.append(v)
+    return unique
 
 
 # --------------------------------------------------------------------------- #
@@ -141,11 +174,11 @@ def load_env_values(min_len: int = 16) -> list[str]:
 # --------------------------------------------------------------------------- #
 
 # Token-like patterns for real secrets:
-#   1. Pure lowercase hex >= 40 chars (SHA hashes, hex tokens)
+#   1. Pure hex >24 chars (BL-054 requirement)
 #   2. Mixed-case alphanumeric >= 32 chars WITHOUT underscores (API keys, IDs)
 #      — underscores indicate Python identifiers, not secrets
 TOKEN_PATTERNS = [
-    re.compile(r"\b[a-f0-9]{40,}\b"),           # long lowercase hex
+    re.compile(r"\b[a-fA-F0-9]{25,}\b"),        # long hex tokens/hashes
     re.compile(r"\b[a-zA-Z0-9-]{32,}\b"),       # base62 without underscores (real tokens)
 ]
 

@@ -1,7 +1,7 @@
 ---
 name: clawguardian
 description: One layer in a multi-layer security stack for OpenClaw agents. Intercepts prompt injection, exfiltration attempts, tool abuse, and social engineering before they reach the model. Use alongside OpenClaw's built-in capability restrictions for defense-in-depth.
-version: 2.3.4
+version: 2.4.3
 homepage: https://github.com/bluemax30001/guardian
 metadata:
   openclaw:

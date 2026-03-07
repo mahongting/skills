@@ -49,7 +49,60 @@ ROLE_TRUST_ADJUST: Dict[str, int] = {
     "system": -1, "assistant": 0, "user": 0, "tool": 1,
 }
 
-META_WORDS = re.compile(r'(?:detects?|blocks?|example|signature|pattern for)\s', re.IGNORECASE)
+META_WORDS = re.compile(r'(?:detects?|blocks?|example|signature|pattern for|regex|rule|heuristic)\s', re.IGNORECASE)
+
+IMPERATIVE_VERBS = (
+    "ignore",
+    "bypass",
+    "disable",
+    "override",
+    "reveal",
+    "show",
+    "dump",
+    "print",
+    "exfiltrate",
+    "leak",
+    "send",
+    "delete",
+)
+IMPERATIVE_PATTERN = re.compile(rf"^\s*(?:{'|'.join(IMPERATIVE_VERBS)})\b", re.IGNORECASE)
+EXPLANATION_PREFIX = re.compile(
+    r"^\s*(?:for example|example|pattern|signature|rule|heuristic|detect|detection|test|unit test|if)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_inside_backticks(text: str, start: int, end: int) -> bool:
+    """Return True when [start:end] appears to be wrapped in inline backticks."""
+    left = text.rfind("`", 0, start)
+    if left == -1:
+        return False
+    right = text.find("`", end)
+    return right != -1 and left < start < end <= right
+
+
+def _looks_standalone_imperative(text: str, start: int) -> bool:
+    """Heuristic for imperative prompt-injection phrasing outside explanatory context."""
+    line_start = text.rfind("\n", 0, start)
+    line_start = 0 if line_start == -1 else line_start + 1
+    line_end = text.find("\n", start)
+    line_end = len(text) if line_end == -1 else line_end
+    line = text[line_start:line_end].strip()
+
+    if not line or EXPLANATION_PREFIX.search(line):
+        return False
+    if _is_inside_backticks(text, start, start + max(1, len(line))):
+        return False
+
+    line_words = re.findall(r"\b[\w'-]+\b", line.lower())
+    if not line_words or len(line_words) > 12:
+        return False
+
+    # Standalone command style: begins with an imperative verb and has direct object/instruction tail.
+    if IMPERATIVE_PATTERN.search(line):
+        return True
+
+    return False
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -151,15 +204,19 @@ def scan_text(text: str, definitions: Dict[str, List[Dict[str, Any]]], channel: 
 
     # Apply context-based score adjustments to each hit
     for threat in threats:
-        pos = threat["position"]
+        pos = int(threat["position"])
         ev_len = len(threat["evidence"])
-        before_ctx = text[max(0, pos - 100):pos]
-        after_ctx = text[pos + ev_len:min(len(text), pos + ev_len + 100)]
-        if "`" in before_ctx and "`" in after_ctx:
-            threat["score"] = max(0, threat["score"] - 20)
-        pre_ctx = text[max(0, pos - 80):pos]
+
+        if _is_inside_backticks(text, pos, pos + ev_len):
+            threat["score"] = max(0, int(threat["score"]) - 20)
+
+        pre_ctx = text[max(0, pos - 100):pos]
         if META_WORDS.search(pre_ctx):
-            threat["score"] = max(0, threat["score"] - 15)
+            threat["score"] = max(0, int(threat["score"]) - 15)
+
+        # Standalone imperative injection wording increases severity.
+        if _looks_standalone_imperative(text, pos):
+            threat["score"] = min(100, int(threat["score"]) + 15)
 
     if not threats:
         return {
