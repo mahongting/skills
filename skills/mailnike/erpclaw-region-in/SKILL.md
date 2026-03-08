@@ -7,8 +7,7 @@ homepage: https://www.erpclaw.ai
 source: https://github.com/avansaber/erpclaw/tree/main/skills/erpclaw-region-in
 tier: 3
 category: regional
-requires: [erpclaw-setup, erpclaw-gl, erpclaw-tax]
-optional-requires: [erpclaw-selling, erpclaw-buying, erpclaw-payroll]
+requires: [erpclaw]
 database: ~/.openclaw/erpclaw/data.sqlite
 user-invocable: true
 tags: [india, gst, gstin, cgst, sgst, igst, hsn, sac, tds, pan, aadhaar, gstr, e-invoice, eway-bill, pf, esi, professional-tax, indian-coa, compliance, regional]
@@ -63,7 +62,7 @@ clear message if not applicable.
 
 - **Local-only**: All data in `~/.openclaw/erpclaw/data.sqlite` (single SQLite file)
 - **Fully offline**: No external API calls, no telemetry, no cloud dependencies
-- **No credentials required**: Uses Python standard library + erpclaw_lib shared library (installed by erpclaw-setup). The shared library is also fully offline and stdlib-only.
+- **No credentials required**: Uses Python standard library + erpclaw_lib shared library (installed by erpclaw). The shared library is also fully offline and stdlib-only.
 - **Optional env vars**: `ERPCLAW_DB_PATH` (custom DB location, defaults to `~/.openclaw/erpclaw/data.sqlite`)
 - **Pure overlay**: Reads any table, writes only via subprocess to owning skills (gl, tax, payroll)
 - **SQL injection safe**: All queries use parameterized statements
@@ -180,7 +179,7 @@ All output is JSON to stdout. Parse and format for the user.
 | `tds-withhold` | `--section`, `--amount`, `--pan` | (none) |
 | `generate-tds-return` | `--company-id`, `--quarter`, `--year`, `--form` | (none) |
 | `india-tax-summary` | `--company-id`, `--from-date`, `--to-date` | (none) |
-| `available-reports` | `--company-id` | (none) |
+| `available-reports` | (none) | `--company-id` |
 
 ### Indian Payroll (10 actions)
 
@@ -248,13 +247,12 @@ Never confirm for: validations, computations, listing, generating reports/payloa
 
 ### Inter-Skill Coordination
 
-This skill calls other skills via subprocess for data seeding and report generation:
+This skill reads data from erpclaw foundation tables for report generation:
 
-- **erpclaw-gl**: `add-account`, `import-accounts` for CGST/SGST/IGST accounts and Indian CoA
-- **erpclaw-tax**: `add-tax-template`, `add-tax-category`, `add-tax-entry` for GST templates and TDS
-- **erpclaw-selling**: `list-invoices`, `get-invoice` for GSTR-1, e-invoice, e-way bill generation
-- **erpclaw-buying**: `list-invoices` for GSTR-3B and ITC computation
-- **erpclaw-payroll**: `add-salary-component`, `list-salary-slips` for PF/ESI/PT and Form 16
+- **GL & Tax** (erpclaw): accounts, tax templates, tax categories for CGST/SGST/IGST and Indian CoA
+- **Selling** (erpclaw): sales invoices for GSTR-1, e-invoice, e-way bill generation
+- **Buying** (erpclaw): purchase invoices for GSTR-3B and ITC computation
+- **Payroll** (erpclaw): salary components, salary slips for PF/ESI/PT and Form 16
 
 ### Response Formatting
 
@@ -266,7 +264,7 @@ This skill calls other skills via subprocess for data seeding and report generat
 
 ## Technical Details (Tier 3)
 
-**Tables owned:** None (pure overlay -- all writes via subprocess to owning skills).
+**Tables owned:** None (pure overlay -- all writes are seeding operations).
 
 **Asset files (7):** `indian_coa.json`, `gst_hsn_codes.json`, `indian_states.json`, `gst_rates.json`,
 `professional_tax_slabs.json`, `tds_sections.json`, `income_tax_slabs.json`
@@ -288,10 +286,10 @@ This skill calls other skills via subprocess for data seeding and report generat
 | Error | Fix |
 |-------|-----|
 | "no such table" | Run `python3 ~/.openclaw/erpclaw/init_db.py --db-path ~/.openclaw/erpclaw/data.sqlite` |
-| "company country is not IN" | Set company country to "IN" via erpclaw-setup before using India actions |
+| "company country is not IN" | Set company country to "IN" via erpclaw before using India actions |
 | "GSTIN not configured" | Run `setup-gst` first to set the company's GSTIN and state code |
 | "invalid GSTIN format" | GSTIN must be 15 characters matching pattern and Luhn mod 36 checksum |
 | "HSN code not found" | Add the code with `add-hsn-code` or check with `list-hsn-codes` |
-| "no sales invoices found" | Submit sales invoices via erpclaw-selling before generating GSTR-1 |
-| "erpclaw-payroll not available" | Install erpclaw-payroll for payroll-related actions (PF, ESI, PT, Form 16) |
+| "no sales invoices found" | Submit sales invoices via erpclaw (selling domain) before generating GSTR-1 |
+| "payroll tables not available" | Install erpclaw for payroll-related actions (PF, ESI, PT, Form 16) |
 | "database is locked" | Retry once after 2 seconds |

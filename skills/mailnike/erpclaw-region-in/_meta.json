@@ -1,11 +1,17 @@
 {
   "owner": "mailnike",
   "slug": "erpclaw-region-in",
-  "displayName": "ERPClaw-Region-India",
+  "displayName": "Erpclaw Region In",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772213603143,
-    "commit": "https://github.com/openclaw/skills/commit/0230fdacbc4314b39c40d67047493bdd8b83c98f"
+    "version": "2.1.0",
+    "publishedAt": 1772907707758,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772213603143,
+      "commit": "https://github.com/openclaw/skills/commit/0230fdacbc4314b39c40d67047493bdd8b83c98f"
+    }
+  ]
 }
