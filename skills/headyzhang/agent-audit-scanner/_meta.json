@@ -1,0 +1,11 @@
+{
+  "owner": "headyzhang",
+  "slug": "agent-audit-scanner",
+  "displayName": "Agent Audit Scanner",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1772740117341,
+    "commit": null
+  },
+  "history": []
+}
