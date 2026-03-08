@@ -15,7 +15,7 @@ import sys
 import urllib.error
 import urllib.request
 
-VERSION = "0.3.0"
+VERSION = "0.5.0"
 USER_AGENT = f"openmandate-openclaw/{VERSION}"
 DEFAULT_BASE_URL = "https://api.openmandate.ai"
 API_KEY_ENV = "OPENMANDATE_API_KEY"
@@ -90,9 +90,7 @@ def _print_json(data: dict | list) -> None:
 
 
 def cmd_create(args: argparse.Namespace) -> None:
-    body: dict = {}
-    if args.category:
-        body["category"] = args.category
+    body: dict = {"want": args.want, "offer": args.offer}
     result = _request("POST", "/v1/mandates", body=body)
     _print_json(result)
 
@@ -207,7 +205,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     # create
     p_create = sub.add_parser("create", help="Create a new mandate")
-    p_create.add_argument("--category", default=None, help="Optional category hint (e.g. services, recruiting)")
+    p_create.add_argument("want", help="What you are looking for (min 20 characters)")
+    p_create.add_argument("offer", help="What you bring to the table (min 20 characters)")
     p_create.set_defaults(func=cmd_create)
 
     # get
@@ -217,7 +216,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # list
     p_list = sub.add_parser("list", help="List mandates")
-    p_list.add_argument("--status", default=None, help="Filter by status (active, intake, closed)")
+    p_list.add_argument("--status", default=None, help="Filter by status (active, intake, matched, closed). Open mandates returned by default.")
     p_list.add_argument("--limit", type=int, default=None, help="Max results")
     p_list.set_defaults(func=cmd_list)
 

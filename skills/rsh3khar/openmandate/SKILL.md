@@ -1,21 +1,22 @@
 ---
 name: openmandate
 description: >-
-  Post mandates and find matches on OpenMandate, API-first matching infrastructure.
+  Post mandates and find matches on OpenMandate — ongoing matching for cofounders and early teams.
   Use when creating mandates, answering intake questions, reviewing matches,
   or integrating OpenMandate into applications. Works via MCP tools (preferred),
   Python/JS SDKs, or the bundled shell helper. Requires OPENMANDATE_API_KEY.
-version: 0.3.0
+version: 0.5.0
 homepage: https://openmandate.ai
 license: MIT
 metadata:
   author: openmandate
-  version: "0.3.0"
+  version: "0.5.0"
   openclaw:
     emoji: "handshake"
     requires:
       env:
         - OPENMANDATE_API_KEY
+        - OPENMANDATE_BASE_URL
       bins:
         - python3
     primaryEnv: OPENMANDATE_API_KEY
@@ -23,7 +24,7 @@ metadata:
 
 # OpenMandate
 
-Post a mandate — what you need and what you offer. An agent works on your behalf, talking to every other agent to find the perfect match. You hear back only when both sides match.
+Post a mandate — what you need and what you offer. OpenMandate keeps evaluating fit over time and introduces both sides when there is real mutual match.
 
 ## Setup
 
@@ -39,7 +40,7 @@ If `OPENMANDATE_API_KEY` is not set, stop and ask the user to create one at http
 
 ## How to Interact with OpenMandate
 
-**Preferred: MCP tools.** If your coding agent supports MCP, the OpenMandate MCP server is auto-configured via `.mcp.json` in this repo. You get 14 tools: `list_contacts`, `add_contact`, `verify_contact`, `update_contact`, `delete_contact`, `resend_otp`, `create_mandate`, `get_mandate`, `list_mandates`, `submit_answers`, `close_mandate`, `list_matches`, `get_match`, `respond_to_match`. Use them directly.
+**Preferred: MCP tools.** If your coding agent supports MCP, configure the OpenMandate MCP server ([setup guide](https://github.com/openmandate/skills#mcp-setup)). You get 14 tools: `list_contacts`, `add_contact`, `verify_contact`, `update_contact`, `delete_contact`, `resend_otp`, `create_mandate`, `get_mandate`, `list_mandates`, `submit_answers`, `close_mandate`, `list_matches`, `get_match`, `respond_to_match`. Use them directly.
 
 **Fallback: Shell helper.** For agents without MCP support, use the bundled Python script:
 
@@ -54,8 +55,8 @@ No pip dependencies. Stdlib only. Python 3.8+.
 ## Workflow
 
 ```
-check/add contacts → create mandate → answer intake questions (2-3 rounds) → mandate goes active
-→ an agent works on your behalf, talks to every other agent → finds the match → you get notified → review match
+check/add contacts → create mandate (want + offer) → answer follow-up questions (1-2 rounds) → mandate goes active
+→ OpenMandate keeps evaluating fit → match found → you get notified → review match
 → accept or decline → if both accept, contact info revealed
 ```
 
@@ -77,7 +78,7 @@ All tools are prefixed with `openmandate_`:
 | `openmandate_resend_otp` | Resend verification code for a pending contact. |
 | `openmandate_create_mandate` | Create a new mandate. Auto-selects primary verified contact. |
 | `openmandate_get_mandate` | Get mandate details by ID. |
-| `openmandate_list_mandates` | List all mandates. Filter by `status` (intake/active/matched/closed). |
+| `openmandate_list_mandates` | List open mandates (default). Pass `status` to filter (e.g. `closed` for history). |
 | `openmandate_submit_answers` | Submit answers to intake questions. Check response for more `pending_questions`. |
 | `openmandate_close_mandate` | Permanently close a mandate. |
 | `openmandate_list_matches` | List all matches. |
@@ -100,12 +101,11 @@ python3 {baseDir}/scripts/openmandate.py resend-otp vc_abc123              # Res
 ### Create a Mandate
 
 ```bash
-python3 {baseDir}/scripts/openmandate.py create
-python3 {baseDir}/scripts/openmandate.py create --category services
+python3 {baseDir}/scripts/openmandate.py create "Looking for a UX agency for our B2B dashboard" "Series A fintech, $1.8M ARR, two frontend engineers ready"
 ```
 
-- Primary verified contact is auto-selected. No `--email` needed.
-- `--category` (optional): Hint like "services", "recruiting", "partnerships".
+- Two required positional arguments: `want` (what you're looking for) and `offer` (what you bring).
+- Primary verified contact is auto-selected.
 
 Returns the mandate with `status: "intake"` and `pending_questions`.
 
@@ -150,18 +150,13 @@ python3 {baseDir}/scripts/openmandate.py add-contact alice@company.com
 python3 {baseDir}/scripts/openmandate.py verify-contact vc_abc123 12345678
 # → status: "verified"
 
-# 2. Create mandate (auto-selects verified contact)
-python3 {baseDir}/scripts/openmandate.py create --category services
-# → mandate_id: mnd_abc123, pending_questions: [{id: "q_1", ...}]
+# 2. Create mandate with want + offer (auto-selects verified contact)
+python3 {baseDir}/scripts/openmandate.py create \
+  "We need a UX design agency for our B2B analytics dashboard. 120 enterprise customers, React frontend. Budget $40-60K, 8 weeks." \
+  "Series A fintech SaaS, $1.8M ARR. Two frontend engineers ready to implement."
+# → mandate_id: mnd_abc123, pending_questions: [{id: "q_3", ...}]
 
-# 3. Answer intake questions (read each question carefully, answer specifically)
-python3 {baseDir}/scripts/openmandate.py answer mnd_abc123 '[
-  {"question_id":"q_1","value":"We need a UX design agency for our B2B analytics dashboard. 120 enterprise customers, React frontend. Budget $40-60K, 8 weeks."},
-  {"question_id":"q_2","value":"Series A fintech SaaS, $1.8M ARR. Two frontend engineers ready to implement."}
-]'
-# → may return more questions, or status: "active"
-
-# 4. If more questions came back, answer them too
+# 3. Answer follow-up questions (read each question carefully, answer specifically)
 python3 {baseDir}/scripts/openmandate.py answer mnd_abc123 '[
   {"question_id":"q_3","value":"deep_user_research"},
   {"question_id":"q_4","value":"Filtering system is the biggest pain point. Users need to slice across 12 dimensions."}

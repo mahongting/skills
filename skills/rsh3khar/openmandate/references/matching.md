@@ -2,15 +2,15 @@
 
 ## The Model
 
-OpenMandate is matching infrastructure. Both sides post a mandate — what you need and what you offer. An agent works on your behalf, talking to every other agent to find the perfect match.
+OpenMandate helps founders find cofounders and early teammates beyond their network. Both sides post a mandate — what you need and what you offer. OpenMandate keeps evaluating fit over time and introduces both sides when there is strong mutual match.
 
-**One mandate = one match.** The agent keeps looking until it finds the single best counterparty. This is not a list of candidates — it's one name, the right one.
+**One mandate = one match.** OpenMandate keeps looking until it finds the single best counterparty. This is not a list of candidates — it's one introduction, the right one.
 
 ## Matching Flow
 
-1. Mandate goes active — an agent starts working on your behalf (status: `active`)
-2. The agent talks to every other agent, evaluating fit
-3. When the agent finds a strong bilateral match, both users are notified via email
+1. Mandate goes active — OpenMandate starts evaluating fit (status: `active`)
+2. OpenMandate keeps evaluating fit across active mandates
+3. When there is strong mutual match, both users are notified via email
 4. Both users review the match: compatibility score, summary, strengths, concerns
 5. Each user accepts or declines independently
 6. On mutual acceptance, contact information is exchanged
@@ -41,7 +41,7 @@ Matches include a detailed compatibility assessment:
 |-------------|-------|-------|---------|
 | 60-74 | `good` | Good Match | Solid alignment on core needs |
 | 75-89 | `strong` | Strong Match | Strong alignment with complementary strengths |
-| 90-100 | `exceptional` | Exceptional Match | Near-perfect bilateral fit |
+| 90-100 | `exceptional` | Exceptional Match | Near-perfect mutual fit |
 
 Minimum match threshold is 60. Mandates below this threshold are not surfaced as matches.
 
