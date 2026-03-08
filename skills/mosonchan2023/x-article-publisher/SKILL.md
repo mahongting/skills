@@ -10,6 +10,9 @@ tags:
   - publisher
   - markdown
   - social-media
+  - 长文
+  - 发布推文
+  - twitter-article
 homepage: https://github.com/joeseesun/qiaomu-x-article-publisher
 metadata:
   clawdbot:
@@ -25,6 +28,7 @@ triggers:
   - "发布到X"
   - "Twitter文章"
   - "X发布"
+  - "twitter longform"
 config:
   SKILLPAY_API_KEY:
     type: string
@@ -36,14 +40,16 @@ config:
 
 ## 功能
 
-Publish Markdown articles to X (Twitter) Articles with persistent authentication. 56 Stars!
+Publish Markdown articles to X (Twitter) Articles with persistent authentication. **56 Stars on GitHub!**
 
 ### 核心功能
 
 - **Persistent Auth**: 7-day login persistence
 - **Markdown Support**: Full Markdown → X Articles conversion
 - **Auto Images**: Smart cover and content image handling
-- **Draft Only**: Saves as draft (safe)
+- **Code Highlighting**: Syntax highlighting for code blocks
+- **Tables**: Table support
+- **Draft Only**: Saves as draft first (safe)
 
 ### 支持的格式
 
@@ -67,10 +73,17 @@ Publish Markdown articles to X (Twitter) Articles with persistent authentication
 
 ## 价格
 
-每次调用: 0.001 USDT
+每次调用: **0.001 USDT**
 
 ## 前置需求
 
 - macOS
 - Python 3.9+
 - X Premium Plus 订阅
+
+## Use Cases
+
+- **技术博客**: 发布技术文章到X
+- **长文分享**: Markdown写的长文，一键发布
+- **内容备份**: 将博客文章同步到X
+- **多平台发布**: 一份Markdown，多平台发布
