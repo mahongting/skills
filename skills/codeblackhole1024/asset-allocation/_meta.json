@@ -1,11 +1,17 @@
 {
   "owner": "codeblackhole1024",
   "slug": "asset-allocation",
-  "displayName": "Asset Allocation Advisor",
+  "displayName": "Asset Allocation",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1772619423449,
-    "commit": "https://github.com/openclaw/skills/commit/28afbb30dbf696867780c592994d5082bf35d79e"
+    "version": "1.0.1",
+    "publishedAt": 1772870031225,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1772619423449,
+      "commit": "https://github.com/openclaw/skills/commit/28afbb30dbf696867780c592994d5082bf35d79e"
+    }
+  ]
 }

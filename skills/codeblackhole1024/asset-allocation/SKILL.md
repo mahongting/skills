@@ -1,6 +1,6 @@
 ---
 name: asset-allocation
-description: Professional investment advisory skill. Use when user asks about investing, wealth management, asset allocation, fund/etf selection, retirement planning, or any money growth topic. Provides comprehensive service from financial diagnosis → goal setting → macro analysis → asset allocation → product selection → execution → risk management → dynamic rebalancing.
+description: Professional investment advisory skill based on CFA framework. From financial diagnosis to portfolio rebalancing. Use when: users ask about investing, wealth management, fund/ETF selection, retirement planning, or asset allocation. Covers: risk assessment, goal-based planning, portfolio construction, product selection, and ongoing rebalancing.
 ---
 
 # Asset Allocation Advisor
