@@ -1,184 +1,334 @@
 ---
 name: fis-architecture
-description: Multi-agent workflow framework using JSON tickets and file-based coordination. Use when managing multi-agent workflows through JSON tickets, tracking tasks with file-based coordination, generating agent badges, or implementing FIS (Federal Intelligence System) workflow patterns.
+description: Orchestrate multi-agent workflows with JSON tickets and A2A coordination. Use when delegating tasks between CyberMao (Main) and Worker agents (Engineer/Researcher/Writer).
+metadata:
+  openclaw:
+    emoji: 🏗️
+    always: false
+homepage: https://github.com/linn/fis-architecture
 ---
 
-# FIS Architecture
+# FIS Architecture 3.2 Pro
 
-Multi-agent workflow framework using JSON tickets and file-based coordination.
+Multi-agent workflow framework for **CyberMao (Main) → Worker** coordination using JSON tickets and Discord Forum threads.
 
-## Overview
+---
 
-FIS (Federal Intelligence System) manages multi-agent workflows through:
-- **JSON tickets** for task tracking
-- **File-based** coordination (no database)
-- **Markdown** for knowledge storage
-- **Optional** Python helpers for badge generation
+## When to Use This Skill
 
-## Quick Start
+**Use FIS when:**
+- CyberMao (Main) needs to delegate complex tasks to specialized Workers
+- A task requires domain expertise (coding, research, writing)
+- You need to track task status across multiple sessions
+- Multi-step workflows require coordination between agents
 
-### 1. Create Ticket
+**Agent Roles:**
+| Role | Agent ID | Expertise |
+|------|----------|-----------|
+| **Architect** | `main` | Coordination, task routing, user communication |
+| **Coding** | `engineer` | Python, gprMax, algorithms, data analysis |
+| **Research** | `researcher` | Theory, literature, simulation planning |
+| **Writing** | `writer` | Documentation, LaTeX, visualization |
+
+---
+
+## Discord Bot Permissions (REQUIRED)
+
+Each agent's Discord bot **must** have these permissions configured in the Discord server. Without them, Thread creation and messaging will fail silently.
+
+**Required Bot Permissions:**
+- **Send Messages** — reply in channels and threads
+- **Send Messages in Threads** — post inside Forum threads
+- **Create Public Threads** — create new Forum posts programmatically
+- **Read Message History** — read thread context
+- **Embed Links** — send rich embeds in reports
+- **Attach Files** — upload deliverables
+
+**How to configure:**
+1. Go to Discord Server Settings → Roles
+2. For each bot role (CyberMao, Researcher, Engineer, Writer), enable the permissions above
+3. Ensure each Forum channel grants these permissions to the relevant bot roles
+
+**Verify with:**
+```json
+{ "action": "threadCreate", "channelId": "<forum_channel_id>", "name": "Permission Test" }
+```
+If the bot lacks permissions, the `discord` tool will return an error.
+
+---
+
+## Tool Configuration
+
+| Tool | Purpose | Path |
+|------|---------|------|
+| `fis_lifecycle_pro.py` | Ticket lifecycle (create/status/complete/list) | `scripts/fis_lifecycle_pro.py` |
+| `fis_coordinator.py` | Generate delegation templates (CyberMao only) | `scripts/fis_coordinator.py` |
+| `fis_worker_toolkit.py` | Spawn sub-agents, generate reports (Workers only) | `scripts/fis_worker_toolkit.py` |
+
+**Python Environment:** Requires Python 3.8+ with standard library only (no external dependencies).
+
+---
+
+## Core Workflow
+
+### Step 1: CyberMao Delegates Task
 
 ```bash
-python3 lib/fis_lifecycle.py create \
-  --agent "worker" \
-  --task "Your task description" \
-  --role "worker"
+# Generate ticket + Thread template + A2A command
+python3 scripts/fis_coordinator.py delegate \
+  --agent engineer \
+  --task "Implement GPR signal filter" \
+  --forum coding
 ```
 
-Or via Python:
-```python
-from lib.fis_lifecycle import FISLifecycle
+**Output:**
+- Ticket ID: `TASK_YYYYMMDD_XXX_AGENT`
+- Thread template content
+- `sessions_send` command to notify Worker
 
-fis = FISLifecycle()
-fis.create_ticket(
-    agent="worker",
-    task="Your task description",
-    role="worker"
-)
-```
+### Step 2: CyberMao Creates Forum Thread
 
-### 2. Complete Task
-
-```bash
-python3 lib/fis_lifecycle.py complete \
-  --ticket-id "TASK_XXX"
-```
-
-### 3. List Active Tickets
-
-```bash
-python3 lib/fis_lifecycle.py list
-```
-
-### 4. Generate Badge (Optional)
-
-**Quick generation:**
-```bash
-cd lib
-python3 badge_generator.py
-```
-
-**Single badge:**
-```python
-from lib.badge_generator import generate_badge_with_task
-
-path = generate_badge_with_task(
-    agent_name="Worker-001",
-    role="WORKER",
-    task_desc="Your task description",
-    task_requirements=["Step 1", "Step 2", "Step 3"]
-)
-```
-
-**Multiple badges:**
-```python
-from lib.badge_generator import generate_multi_badge
-
-cards = [
-    {
-        'agent_name': 'Worker-001',
-        'role': 'worker',
-        'task_desc': 'Implement feature A',
-        'task_requirements': ['Design', 'Code', 'Test']
-    },
-    {
-        'agent_name': 'Reviewer-001',
-        'role': 'reviewer',
-        'task_desc': 'Review implementation',
-        'task_requirements': ['Check code', 'Verify tests']
-    }
-]
-path = generate_multi_badge(cards, "team_badges.png")
-```
-
-**Custom badge with full control:**
-```python
-from lib.badge_generator import BadgeGenerator
-from datetime import datetime
-
-generator = BadgeGenerator()
-
-agent_data = {
-    'name': 'Custom-Agent',
-    'id': f'AGENT-{datetime.now().year}-001',
-    'role': 'WORKER',
-    'task_id': '#TASK-001',
-    'soul': '"Execute with precision"',
-    'responsibilities': [
-        "Complete assigned tasks",
-        "Report progress promptly"
-    ],
-    'output_formats': 'MARKDOWN | JSON',
-    'task_requirements': [
-        "1. Analyze requirements",
-        "2. Implement solution"
-    ],
-    'status': 'ACTIVE',
-    # 'qr_url': 'https://your-link.com'  # Optional: adds QR code
-}
-
-path = generator.create_badge(agent_data)
-```
-
-## File Structure
-
-Skill files:
-```
-lib/
-├── fis_lifecycle.py      # Ticket lifecycle management
-├── badge_generator.py    # Badge image generation
-└── fis_config.py         # Configuration
-
-examples/
-└── demo.py               # Runnable examples showing badge generation
-```
-
-Workflow hub (created at runtime):
-```
-~/.openclaw/fis-hub/           # Your workflow hub
-├── tickets/
-│   ├── active/               # Active tasks
-│   └── completed/            # Archived tasks
-└── knowledge/                # Shared knowledge
-```
-
-## Ticket Format
+Use the `discord` tool to create a Thread in the appropriate Forum channel:
 
 ```json
 {
-  "ticket_id": "TASK_001",
-  "agent_id": "worker-001",
-  "role": "worker",
-  "task": "Task description",
-  "status": "active",
-  "created_at": "2026-02-25T10:00:00",
-  "updated_at": "2026-02-25T10:00:00"
+  "action": "threadCreate",
+  "channelId": "<forum_channel_id>",
+  "name": "TASK_xxx: Implement GPR signal filter"
 }
 ```
 
-## Workflow
+The response returns the new Thread ID. Then notify the Worker with the Thread ID:
 
-1. **Create** ticket with task description
-2. **Execute** task by worker agent
-3. **Review** (optional) by reviewer agent
-4. **Complete** and archive ticket
+```bash
+python3 scripts/fis_coordinator.py notify \
+  --ticket-id TASK_xxx \
+  --thread-id <new_thread_id>
+```
 
-## Badge Output
+Execute the generated `sessions_send` command to notify the Worker.
 
-Badges are saved to: `~/.openclaw/output/badges/`
+### Step 3: Worker Executes Task
 
-Badge features:
-- Security level and workspace ID display
-- Optional QR code (when `qr_url` provided)
-- Chinese font support
+```bash
+# Check ticket
+python3 scripts/fis_lifecycle_pro.py list
 
-## Dependencies
+# Update status
+python3 scripts/fis_lifecycle_pro.py status \
+  --ticket-id TASK_xxx --status doing
 
-Optional (for badges):
-- `Pillow>=9.0.0`
-- `qrcode>=7.0`
+# Optional: Spawn sub-agent for complex sub-tasks
+python3 scripts/fis_worker_toolkit.py spawn \
+  --parent-ticket TASK_xxx \
+  --subtask "Analyze algorithm complexity"
+```
 
-## License
+Worker replies in the Forum Thread using the `discord` tool:
 
-MIT
+```json
+{
+  "action": "threadReply",
+  "channelId": "<thread_id>",
+  "content": "Task received. Starting execution."
+}
+```
+
+### Step 4: Worker Reports Completion
+
+```bash
+# Generate completion report
+python3 scripts/fis_worker_toolkit.py report \
+  --parent-ticket TASK_xxx \
+  --summary "Successfully implemented GPR filter" \
+  --deliverables filter.py test_results.json
+```
+
+Execute the generated `sessions_send` command to notify CyberMao.
+
+### Step 5: CyberMao Finalizes
+
+```bash
+# View report
+python3 scripts/fis_coordinator.py report --ticket-id TASK_xxx
+
+# Mark complete
+python3 scripts/fis_lifecycle_pro.py complete --ticket-id TASK_xxx
+```
+
+Archive the Thread and report to User in #daily-chat.
+
+---
+
+## Architecture
+
+```
+User/Linn
+    ↓
+CyberMao (Main) - Architect, coordinator
+    ↓ sessions_send + discord threadCreate
+Worker (Engineer/Researcher/Writer) - Domain experts
+    ↓ (optional) sessions_spawn mode="run"
+SubAgent (temporary, background) - Complex sub-tasks
+```
+
+**Key Principles:**
+1. **A2A via sessions_send** — Main calls Workers, Workers report back
+2. **Ticket tracking** — All tasks have JSON tickets in `fis-hub/`
+3. **Programmatic Thread creation** — CyberMao creates Forum Threads via `discord` tool's `threadCreate` action
+4. **SubAgent background mode** — `sessions_spawn` with `mode="run"`, no new Thread
+
+---
+
+## Commands Reference
+
+### fis_lifecycle_pro.py
+
+```bash
+# Create ticket
+python3 scripts/fis_lifecycle_pro.py create \
+  --agent engineer --task "Description" --channel-type coding
+
+# Update status (todo/doing/done)
+python3 scripts/fis_lifecycle_pro.py status \
+  --ticket-id TASK_xxx --status doing --note "Progress update"
+
+# Mark complete
+python3 scripts/fis_lifecycle_pro.py complete --ticket-id TASK_xxx
+
+# List active tickets
+python3 scripts/fis_lifecycle_pro.py list
+
+# Archive old tickets
+python3 scripts/fis_lifecycle_pro.py archive
+```
+
+### fis_coordinator.py (CyberMao only)
+
+```bash
+# Delegate and generate templates
+python3 scripts/fis_coordinator.py delegate \
+  --agent researcher --task "GPR theory analysis" --forum theory
+
+# Notify Worker after Thread is created
+python3 scripts/fis_coordinator.py notify \
+  --ticket-id TASK_xxx --thread-id <discord_thread_id>
+
+# View detailed report
+python3 scripts/fis_coordinator.py report --ticket-id TASK_xxx
+```
+
+### fis_worker_toolkit.py (Workers only)
+
+```bash
+# Spawn sub-agent (background, no Thread)
+python3 scripts/fis_worker_toolkit.py spawn \
+  --parent-ticket TASK_xxx --subtask "Complex sub-task description"
+
+# Generate completion report
+python3 scripts/fis_worker_toolkit.py report \
+  --parent-ticket TASK_xxx \
+  --summary "Completion summary" \
+  --deliverables file1.py file2.json
+```
+
+---
+
+## Channel Mapping
+
+| Category | Forum Channel | Worker | Tool Flag |
+|----------|--------------|--------|-----------|
+| RESEARCH | 🔬-theory-derivation | @Researcher | `--forum theory` |
+| RESEARCH | 📊-gpr-simulation | @Researcher | `--forum simulation` |
+| DEVELOPMENT | 💻-coding | @Engineer | `--forum coding` |
+| WRITING | 📝-drafts | @Writer | `--forum drafts` |
+
+---
+
+## Error Handling
+
+**If ticket creation fails:**
+- Check Python version: `python3 --version` (need 3.8+)
+- Verify `fis-hub/` directory exists and is writable
+- Check disk space
+
+**If Thread creation fails:**
+- Verify the bot has **Create Public Threads** permission in the target Forum channel
+- Check that `channelId` points to a Forum channel (not a regular text channel)
+- Confirm the bot is a member of the server with correct roles
+
+**If A2A fails:**
+- Verify `openclaw.json` has `agentToAgent.enabled: true`
+- Confirm Worker agent ID is in `allow` list
+- Check Worker session is active
+
+**If sub-agent spawn fails:**
+- Ensure `mode="run"` is used (not `mode="session"`)
+- Verify task description is clear and specific
+
+---
+
+## Quality Standards
+
+1. **One Task = One Ticket** — Never reuse ticket IDs
+2. **Status Updates Required** — Workers must update status (TODO → DOING → DONE)
+3. **Thread Per Task** — Each task gets its own Forum Thread (created via `threadCreate`)
+4. **A2A Confirmation** — Always confirm receipt via sessions_send
+5. **Archive After Complete** — Archive Thread after task completion
+
+---
+
+## Configuration
+
+Required in `~/.openclaw/openclaw.json`:
+
+```json
+{
+  "tools": {
+    "agentToAgent": {
+      "enabled": true,
+      "allow": ["main", "researcher", "engineer", "writer"]
+    }
+  }
+}
+```
+
+---
+
+## Testing
+
+### Quick A2A Test
+
+```python
+# Test connectivity
+sessions_send(sessionKey="engineer", message="A2A test")
+```
+
+### Thread Creation Test
+
+```json
+{ "action": "threadCreate", "channelId": "<forum_channel_id>", "name": "FIS Test Thread" }
+```
+
+### Full Workflow Test
+
+```bash
+# 1. Create task
+python3 scripts/fis_coordinator.py delegate \
+  --agent researcher --task "Test task" --forum theory
+
+# 2. Create Forum Thread via discord tool threadCreate
+
+# 3. Notify Worker with Thread ID
+python3 scripts/fis_coordinator.py notify \
+  --ticket-id TASK_xxx --thread-id <thread_id>
+
+# 4. Execute A2A command
+
+# 5. Complete
+python3 scripts/fis_lifecycle_pro.py complete --ticket-id TASK_xxx
+```
+
+---
+
+*FIS 3.2 Pro | Multi-Agent Workflow Framework*

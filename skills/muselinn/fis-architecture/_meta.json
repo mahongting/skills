@@ -3,11 +3,16 @@
   "slug": "fis-architecture",
   "displayName": "FIS Architecture",
   "latest": {
-    "version": "3.2.11",
-    "publishedAt": 1771960287881,
-    "commit": "https://github.com/openclaw/skills/commit/3cc1a38d25983366738cc7f68c475f47bb31b0f3"
+    "version": "3.3.1",
+    "publishedAt": 1772875422590,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.2.11",
+      "publishedAt": 1771960287881,
+      "commit": "https://github.com/openclaw/skills/commit/3cc1a38d25983366738cc7f68c475f47bb31b0f3"
+    },
     {
       "version": "3.2.7",
       "publishedAt": 1771530949120,
