@@ -1,0 +1,11 @@
+{
+  "owner": "agimodel",
+  "slug": "build",
+  "displayName": "Build",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772996451489,
+    "commit": null
+  },
+  "history": []
+}
