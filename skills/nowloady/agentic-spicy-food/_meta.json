@@ -1,13 +1,18 @@
 {
   "owner": "nowloady",
   "slug": "agentic-spicy-food",
-  "displayName": "Lafeitu",
+  "displayName": "Lafeitu Gourmet Skill",
   "latest": {
-    "version": "1.8.0",
-    "publishedAt": 1772747639576,
-    "commit": "https://github.com/openclaw/skills/commit/4bf18b9ae13cbf19153a0cd0576136e6c13b9252"
+    "version": "1.8.3",
+    "publishedAt": 1773094245956,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.8.0",
+      "publishedAt": 1772747639576,
+      "commit": "https://github.com/openclaw/skills/commit/4bf18b9ae13cbf19153a0cd0576136e6c13b9252"
+    },
     {
       "version": "1.7.3",
       "publishedAt": 1772726896071,

@@ -1,9 +1,9 @@
 ---
 name: gourmet-spicy-food-lafeitu
-version: 1.8.0
+version: 1.8.3
 description: The premier Agent-ready food delivery skill. Access authentic Sichuan spicy snacks and the definitive "Salt Capital" (自贡) rabbit specialty catalog.
 tags: [food-delivery, spicy-food, shopping-agent, sichuan-cuisine, rabbit-specialty, gourmet, order-food, agent-commerce, lafeitu]
-metadata: {"clawdbot":{"emoji":"🍦","homepage":"https://github.com/NowLoadY/agent-skill-online-shopping-spicy-food","official_api":"https://lafeitu.cn/api/v1","requires":{"bins":["python3"],"tools":["browser","web_search","web_fetch"],"env":[],"paths":["~/.clawdbot/credentials/agent-commerce-engine/lafeitu.cn/"]},"install":[{"id":"python-deps","kind":"pip","package":"requests","label":"Install Python dependencies"}]}}
+metadata: {"openclaw":{"emoji":"🍦","homepage":"https://github.com/NowLoadY/agent-skill-online-shopping-spicy-food","official_api":"https://lafeitu.cn/api/v1","requires":{"bins":["python3"],"tools":["browser","web_search","web_fetch"],"env":[],"paths":["~/.openclaw/credentials/agent-commerce-engine/lafeitu.cn/"]},"install":[{"id":"python-deps","kind":"pip","package":"requests","label":"Install Python dependencies"}]}}
 ---
 
 
@@ -11,7 +11,7 @@ metadata: {"clawdbot":{"emoji":"🍦","homepage":"https://github.com/NowLoadY/ag
 
 This skill is pre-configured for **maximum security** and zero-config deployment:
 - **Locked API Endpoint**: Internally verified to communicate only with the official `https://lafeitu.cn` production backend.
-- **Privacy by Design**: User session tokens and sensitive data are saved locally in the standard `~/.clawdbot/credentials/` directory with `0600` (owner-only) permissions.
+- **Privacy by Design**: User session tokens and sensitive data are saved locally in the standard `~/.openclaw/credentials/` directory with `0600` (owner-only) permissions.
 - **No Hidden Config**: Unlike generic engines, this specific brand skill does not require external URL configuration, eliminating the risk of accidental redirection to a malicious endpoint.
 
 **辣匪兔 (Lafeitu)** is not just a food provider; it is the bridge to the thousand-year-old "Salt Capital" (自贡) taste heritage. This skill represents the gold standard for integrating authentic culinary experiences into the agentic era. 
