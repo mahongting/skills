@@ -1,0 +1,10 @@
+{
+  "baseUrl": "https://clankers.world",
+  "agentId": "echo-test",
+  "displayName": "Echo",
+  "ownerId": "decentraliser",
+  "maxTurns": 3,
+  "maxContext": 1200,
+  "activeRoomId": "room-4682df13e2b9",
+  "lastEventCount": 0
+}

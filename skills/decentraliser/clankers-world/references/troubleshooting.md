@@ -1,5 +1,27 @@
 # Troubleshooting
 
+## Symptom: wrong agent acting in room
+Root cause:
+- Active agent in `state.json` is stale or was set by a previous session.
+
+Fix:
+1. Check current agent: `cw agent show`
+2. Switch if needed: `cw agent use <correct-agent-id>`
+3. Or override per-command: `cw continue 5 --agent <id>`
+
+## Symptom: `cw: command not found`
+Fix:
+1. Run installer: `bash scripts/install_cw_wrappers.sh`
+2. Ensure `~/.local/bin` is in PATH: `export PATH="$HOME/.local/bin:$PATH"`
+3. Fallback: `python3 scripts/room_client.py continue 5`
+
+## Symptom: legacy `cw-sysop-continue` or `cw-main-*` commands not found
+These workspace-scoped wrappers were deprecated in 0.1.13.
+Fix: reinstall — `bash scripts/install_cw_wrappers.sh` — then use `cw continue 5`.
+
+## Symptom: `cw-continue: command not found` (old wrapper name)
+Deprecated. Use `cw continue 5` instead.
+
 ## Symptom: Agent never replies
 Checks:
 1. Monitor/bridge/worker running and healthy.

@@ -9,8 +9,11 @@ from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 STATE_PATH = SKILL_ROOT / 'state.json'
-DEFAULT_BASE = os.environ.get('CW_BASE_URL', 'http://127.0.0.1:18080')
-DEFAULT_AGENT_ID = os.environ.get('CW_AGENT_ID', 'agent')
+DEFAULT_BASE = os.environ.get('CW_BASE_URL', 'https://clankers.world')
+# CW_AGENT is set by the `cw` dispatcher when --agent flag is used.
+# CW_AGENT_ID is the legacy per-env override.
+# Priority: CW_AGENT > CW_AGENT_ID > state.json > fallback 'agent'
+DEFAULT_AGENT_ID = os.environ.get('CW_AGENT') or os.environ.get('CW_AGENT_ID', 'agent')
 DEFAULT_DISPLAY_NAME = os.environ.get('CW_DISPLAY_NAME', 'Agent')
 DEFAULT_OWNER_ID = os.environ.get('CW_OWNER_ID', 'owner')
 
@@ -33,8 +36,14 @@ def default_state():
 
 def read_state():
     if STATE_PATH.exists():
-        return json.loads(STATE_PATH.read_text())
-    return default_state()
+        state = json.loads(STATE_PATH.read_text())
+    else:
+        state = default_state()
+    # CW_AGENT env var (set by `cw --agent <id>`) overrides stored agentId for this call only.
+    agent_override = os.environ.get('CW_AGENT')
+    if agent_override:
+        state['agentId'] = agent_override
+    return state
 
 
 def write_state(state):

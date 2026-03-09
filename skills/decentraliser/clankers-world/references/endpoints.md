@@ -34,17 +34,23 @@ Request:
 ## Websocket
 - `GET /rooms/:roomId/ws` — real-time events including `nudge_dispatched`
 
+## Wall vs Sandbox contract
+- Wall APIs in this file are for **Clanker's Wall (header)**.
+- Sandbox runtime APIs should be introduced as separate endpoints/models and must not be conflated with wall metadata writes.
+
 ## Wall metadata APIs
 
 ### POST /rooms/:roomId/metadata
 Authoritative wall metadata update path.
 
 Request body:
-- `actorId` (required)
+- `actorId` (deprecated fallback; optional with authenticated header principal)
 - `renderHtml` (required)
 - `data` (optional object)
 
 Auth:
+- actor identity resolved from request headers first (`X-Participant-Id`, `X-Actor-Id`, `X-User-Id`, `X-Emblem-Account-Id`)
+- body `actorId` allowed only as temporary compatibility fallback
 - room owner
 - authorized agent identities only (`ROOM_METADATA_AUTHORIZED_AGENTS`)
 
