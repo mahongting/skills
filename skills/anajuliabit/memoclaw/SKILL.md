@@ -1,6 +1,6 @@
 ---
 name: memoclaw
-version: 1.20.5
+version: 1.22.0
 description: |
   Memory-as-a-Service for AI agents. Store and recall memories with semantic
   vector search. 100 free calls per wallet, then x402 micropayments.
@@ -39,25 +39,42 @@ If `memoclaw init` has never been run, **all commands will fail**. Run it first 
 
 ## Quick reference
 
+> 📖 For full end-to-end examples (session flows, migration, multi-agent patterns, cost breakdown), see [examples.md](examples.md).
+
 **Essential commands:**
 ```bash
 memoclaw store "fact" --importance 0.8 --tags t1,t2 --memory-type preference   # save ($0.005)  [types: correction|preference|decision|project|observation|general]
-memoclaw store --file notes.txt --importance 0.7       # store from file ($0.005)
-echo -e "fact1\nfact2" | memoclaw store --batch       # batch from stdin ($0.04)
-memoclaw store "fact" --pinned --immutable             # pinned + locked forever
+memoclaw store --file notes.txt --importance 0.7 --memory-type general  # store from file ($0.005)
+echo -e "fact1\nfact2" | memoclaw store --batch --memory-type general  # batch from stdin ($0.04)
+memoclaw store "fact" --pinned --immutable --memory-type correction  # pinned + locked forever
 memoclaw recall "query"                    # semantic search ($0.005)
 memoclaw recall "query" --min-similarity 0.7 --limit 3  # stricter match
 memoclaw search "keyword"                  # text search (free)
 memoclaw context "what I need" --limit 10  # LLM-ready block ($0.01)
 memoclaw core --limit 5                    # high-importance foundational memories (free)
 memoclaw list --sort-by importance --limit 5 # top memories (free)
+memoclaw whoami                            # print your wallet address (free)
+```
+
+**Management commands:**
+```bash
+memoclaw update <uuid> --content "new text" --importance 0.9  # update in-place ($0.005 if content changes)
+memoclaw ingest --text "raw text to extract facts from"       # auto-extract + dedup ($0.01)
+memoclaw extract "fact1. fact2. fact3."                        # split into separate memories ($0.01)
+memoclaw consolidate --namespace default --dry-run             # merge similar memories ($0.01)
+memoclaw suggested --category stale --limit 10                 # proactive suggestions (free)
+memoclaw migrate ./memory/                                     # import .md files ($0.01)
+memoclaw diff <uuid>                                           # show content changes between versions (free)
+memoclaw diff <uuid> --all                                     # show all diffs in sequence (free)
+memoclaw upgrade                                               # check for and install CLI updates
+memoclaw upgrade --check                                       # check only, don't install
 ```
 
 **Importance cheat sheet:** `0.9+` corrections/critical · `0.7–0.8` preferences · `0.5–0.6` context · `≤0.4` ephemeral
 
 **Memory types:** `correction` (180d) · `preference` (180d) · `decision` (90d) · `project` (30d) · `observation` (14d) · `general` (60d)
 
-**Free commands:** list, get, delete, search, core, suggested, relations, history, export, import, namespace list, stats, count, browse, config, graph, completions
+**Free commands:** list, get, delete, bulk-delete, purge, search, core, suggested, relations, history, diff, export, import, namespace list, stats, count, browse, config, graph, completions, whoami, status, upgrade
 
 ---
 
@@ -83,6 +100,25 @@ Is the information worth remembering across sessions?
          │  └─ Ephemeral observation → importance 0.3-0.5 (or skip)
          └─ Multiple facts / raw conversation → Use `ingest` (auto-extract + dedup)
 ```
+
+### Which retrieval command?
+
+```
+Need to retrieve memories?
+├─ Need high-importance foundational facts (session start)? → memoclaw core (FREE)
+├─ Know the exact keyword or phrase? → memoclaw search "keyword" (FREE)
+├─ Need semantic similarity match? → memoclaw recall "query" ($0.005)
+└─ Need an LLM-ready context block for a prompt? → memoclaw context "query" ($0.01)
+```
+
+| Command | Cost | How it works | Best for |
+|---------|------|-------------|----------|
+| `core` | Free | Returns pinned + high-importance memories, no query needed | Session start, loading essentials |
+| `search` | Free | Keyword/text match (no embeddings) | Exact terms, checking if something exists |
+| `recall` | $0.005 | Semantic vector search (embeddings) | "What did user say about X?" style queries |
+| `context` | $0.01 | GPT assembles an LLM-ready block from relevant memories | Feeding context into a system prompt |
+
+**Cost-saving tip:** Start with `core` + `search` (both free). Only use `recall`/`context` when you need semantic understanding or formatted output.
 
 ### When MemoClaw beats local files
 
@@ -215,7 +251,7 @@ memoclaw store "Session $(date +%Y-%m-%d): {1-sentence summary}" \
 #### Conversation digest (via ingest)
 ```bash
 # Extract facts from a transcript
-memoclaw ingest "$(cat conversation.txt)" --namespace default --auto-relate
+cat conversation.txt | memoclaw ingest --namespace default --auto-relate
 ```
 
 #### Key points extraction
@@ -267,6 +303,8 @@ Things that waste calls or degrade recall quality:
 
 ### Example flow
 
+> See [examples.md](examples.md) for 10 detailed scenarios including session lifecycle, migration, multi-agent patterns, and cost breakdown.
+
 ```
 User: "Remember, I prefer tabs over spaces"
 
@@ -297,14 +335,17 @@ memoclaw init
 # Check free tier status
 memoclaw status
 
+# Print your wallet address
+memoclaw whoami
+
 # Store a memory
 memoclaw store "User prefers dark mode" --importance 0.8 --tags preferences,ui --memory-type preference
 
 # Store with additional flags
 memoclaw store "Never deploy on Fridays" --importance 0.95 --immutable --pinned
-memoclaw store "Session note" --expires-at 2026-04-01T00:00:00Z
-memoclaw store --file ./notes.txt --importance 0.7 --tags meeting  # read content from file
-memoclaw store "key fact" --id-only                                # print only the UUID (for scripting)
+memoclaw store "Session note" --expires-at 2026-04-01T00:00:00Z --memory-type observation
+memoclaw store --file ./notes.txt --importance 0.7 --tags meeting --memory-type general  # read content from file
+memoclaw store "key fact" --id-only --memory-type general           # print only the UUID (for scripting)
 
 # Batch store from stdin (one per line or JSON array)
 echo -e "fact one\nfact two" | memoclaw store --batch
@@ -313,7 +354,7 @@ cat memories.json | memoclaw store --batch
 # Recall memories
 memoclaw recall "what theme does user prefer"
 memoclaw recall "project decisions" --namespace myproject --limit 5
-memoclaw recall "user settings" --memory-type preference
+memoclaw recall "user settings" --tags preferences
 
 # Get a single memory by ID
 memoclaw get <uuid>
@@ -323,14 +364,16 @@ memoclaw list --namespace default --limit 20
 
 # Update a memory in-place
 memoclaw update <uuid> --content "Updated text" --importance 0.9 --pinned true
+memoclaw update <uuid> --memory-type decision --namespace project-alpha
+memoclaw update <uuid> --expires-at 2026-06-01T00:00:00Z
 
 # Delete a memory
 memoclaw delete <uuid>
 
 # Ingest raw text (extract + dedup + relate)
-memoclaw ingest "raw text to extract facts from"
-memoclaw ingest --text "alternative flag form"
+memoclaw ingest --text "raw text to extract facts from"
 memoclaw ingest --file meeting-notes.txt              # read from file
+echo "raw text" | memoclaw ingest                     # pipe via stdin
 
 # Extract facts from text
 memoclaw extract "User prefers dark mode. Timezone is PST."
@@ -358,7 +401,7 @@ memoclaw relations create <memory-id> <target-id> related_to
 memoclaw relations delete <memory-id> <relation-id>
 
 # Traverse the memory graph
-memoclaw graph <memory-id> --depth 2 --limit 50
+memoclaw graph <memory-id>
 
 # Assemble context block for LLM prompts
 memoclaw context "user preferences and recent decisions" --limit 10
@@ -385,6 +428,11 @@ memoclaw stats
 # View memory change history
 memoclaw history <uuid>
 
+# Show content diff between memory versions (unified diff, free)
+memoclaw diff <uuid>                   # latest vs previous
+memoclaw diff <uuid> --revision 2      # specific revision
+memoclaw diff <uuid> --all             # all diffs in sequence
+
 # Quick memory count
 memoclaw count
 memoclaw count --namespace project-alpha
@@ -399,6 +447,11 @@ memoclaw import memories.json
 memoclaw config show
 memoclaw config check
 
+# Check for CLI updates
+memoclaw upgrade                       # check and prompt to install
+memoclaw upgrade --check               # check only, don't install
+memoclaw upgrade --yes                 # auto-install without prompting
+
 # Shell completions
 memoclaw completions bash >> ~/.bashrc
 memoclaw completions zsh >> ~/.zshrc
@@ -407,6 +460,11 @@ memoclaw completions zsh >> ~/.zshrc
 **Global flags (work with any command):**
 ```bash
 -j, --json              # Machine-readable JSON output (best for agent piping)
+-n, --namespace <name>  # Filter/set namespace
+-l, --limit <n>         # Limit results
+-o, --offset <n>        # Pagination offset
+-t, --tags <a,b>        # Comma-separated tags
+-f, --format <fmt>      # Output format: json, table, csv, yaml
 -O, --output <file>     # Write output to file instead of stdout
 -F, --field <name>      # Extract a specific field from output
 -k, --columns <cols>    # Select columns: id,content,importance,tags,created
@@ -416,11 +474,19 @@ memoclaw completions zsh >> ~/.zshrc
 -m, --sort-by <field>   # Sort by: id, importance, created, updated
 -w, --watch             # Continuous polling for changes
 --watch-interval <ms>   # Polling interval for watch mode (default: 5000)
+--agent-id <id>         # Agent identifier for multi-agent scoping
+--session-id <id>       # Session identifier for per-conversation scoping
 -s, --truncate <n>      # Truncate output to n characters
 --no-truncate           # Disable truncation
 -c, --concurrency <n>   # Parallel imports (default: 1)
 -y, --yes               # Skip confirmation prompts (alias for --force)
+--force                 # Skip confirmation prompts
 -T, --timeout <sec>     # Request timeout (default: 30)
+-M, --memory-type <t>   # Memory type (global alias for --memory-type)
+--retries <n>           # Max retries on transient errors (default: 3)
+--no-retry              # Disable retries (fail-fast mode)
+--since <date>          # Filter by creation date (ISO 8601 or relative: 1h, 7d, 2w, 1mo, 1y)
+--until <date>          # Filter by creation date (upper bound)
 -p, --pretty            # Pretty-print JSON output
 -q, --quiet             # Suppress non-essential output
 ```
@@ -473,6 +539,7 @@ The CLI handles both automatically.
 | Store batch (up to 100) | $0.04 |
 | Update memory | $0.005 |
 | Recall (semantic search) | $0.005 |
+| Batch update | $0.005 |
 | Extract facts | $0.01 |
 | Consolidate | $0.01 |
 | Ingest | $0.01 |
@@ -576,16 +643,23 @@ API call failed?
 
 If you've been using local markdown files (e.g., `MEMORY.md`, `memory/*.md`) for persistence, here's how to migrate:
 
-### Step 1: Extract facts from existing files
+### Step 1: Migrate .md files
+
+Use the dedicated `migrate` command — it splits files on `## ` headers, deduplicates by content hash, auto-assigns importance/tags/memory_type, and processes up to 10 files per batch:
 
 ```bash
-# Feed your existing memory file to ingest
-memoclaw ingest "$(cat MEMORY.md)" --namespace default
+# Migrate a directory of .md files (recommended)
+memoclaw migrate ./memory/
 
-# Or for multiple files
-for f in memory/*.md; do
-  memoclaw ingest "$(cat "$f")" --namespace default
-done
+# Migrate a single file
+memoclaw migrate ./MEMORY.md
+```
+
+For non-.md raw text (conversation transcripts, logs), use `ingest` instead:
+
+```bash
+# Extract facts from raw text
+cat transcript.txt | memoclaw ingest --namespace default
 ```
 
 ### Step 2: Verify migration
@@ -593,6 +667,7 @@ done
 ```bash
 # Check what was stored
 memoclaw list --limit 50
+memoclaw count   # quick total
 
 # Test recall
 memoclaw recall "user preferences"
