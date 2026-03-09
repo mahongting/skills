@@ -1,0 +1,11 @@
+{
+  "owner": "gdwebw",
+  "slug": "my-shell",
+  "displayName": "My Shell",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772887364493,
+    "commit": null
+  },
+  "history": []
+}
