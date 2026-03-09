@@ -1,0 +1,11 @@
+{
+  "owner": "day253",
+  "slug": "day253-volcengine-ai-audio-tts",
+  "displayName": "Volcengine TTS Audio Synthesis",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772975320619,
+    "commit": null
+  },
+  "history": []
+}
