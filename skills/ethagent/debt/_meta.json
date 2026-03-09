@@ -1,0 +1,11 @@
+{
+  "owner": "ethagent",
+  "slug": "debt",
+  "displayName": "Debt",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772942561833,
+    "commit": null
+  },
+  "history": []
+}
