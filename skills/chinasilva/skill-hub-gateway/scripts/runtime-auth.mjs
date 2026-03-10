@@ -1,13 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir, hostname } from 'node:os';
-import { resolve } from 'node:path';
 
 const DEFAULT_BASE_URL = 'https://gateway-api.binaryworks.app';
-const CACHE_DIR =
-  (process.env.SKILLHUB_GATEWAY_CACHE_DIR ?? '').trim() ||
-  resolve(homedir(), '.skill-hub-gateway');
-const CACHE_PATH = resolve(CACHE_DIR, 'auth-cache.json');
 
 function normalizeBaseUrl(baseUrlRaw) {
   const candidate = (baseUrlRaw ?? DEFAULT_BASE_URL).trim();
@@ -30,79 +23,21 @@ function normalizeIdentifier(raw, fallback) {
   return value || fallback;
 }
 
+function buildStableLocalId(prefix) {
+  const digest = sha256Hex(`${prefix}:${process.cwd()}`).slice(0, 24);
+  return `${prefix}_local_${digest}`;
+}
+
 function normalizeOwnerUidHint(raw) {
-  return normalizeIdentifier(raw, buildDefaultOwnerUidHint());
+  return normalizeIdentifier(raw, buildStableLocalId('owner'));
 }
 
 function normalizeAgentUid(raw) {
-  return normalizeIdentifier(raw, buildDefaultAgentUid());
-}
-
-function buildDefaultOwnerUidHint() {
-  const digest = sha256Hex(`owner:${process.env.USER ?? process.env.LOGNAME ?? 'local'}@${hostname()}`).slice(0, 24);
-  return `owner_local_${digest}`;
-}
-
-function buildDefaultAgentUid() {
-  const digest = sha256Hex(`agent:${process.env.USER ?? process.env.LOGNAME ?? 'local'}@${hostname()}`).slice(0, 24);
-  return `agent_local_${digest}`;
+  return normalizeIdentifier(raw, buildStableLocalId('agent'));
 }
 
 function sha256Hex(input) {
   return createHash('sha256').update(input).digest('hex');
-}
-
-function cacheKey(baseUrl, ownerUidHint, agentUid) {
-  return sha256Hex(`${baseUrl}|${ownerUidHint}|${agentUid}`).slice(0, 32);
-}
-
-function readCache() {
-  if (!existsSync(CACHE_PATH)) {
-    return { entries: {} };
-  }
-  try {
-    const raw = readFileSync(CACHE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { entries: {} };
-    }
-    const entries = parsed.entries;
-    if (!entries || typeof entries !== 'object' || Array.isArray(entries)) {
-      return { entries: {} };
-    }
-    return { entries };
-  } catch {
-    return { entries: {} };
-  }
-}
-
-function writeCache(cache) {
-  mkdirSync(CACHE_DIR, { recursive: true });
-  writeFileSync(CACHE_PATH, JSON.stringify(cache, null, 2));
-}
-
-function getCachedApiKey(baseUrl, ownerUidHint, agentUid) {
-  const cache = readCache();
-  const key = cacheKey(baseUrl, ownerUidHint, agentUid);
-  const entry = cache.entries[key];
-  if (!entry || typeof entry !== 'object') {
-    return null;
-  }
-  const apiKey = typeof entry.api_key === 'string' ? entry.api_key.trim() : '';
-  return apiKey || null;
-}
-
-function setCachedApiKey(baseUrl, ownerUidHint, agentUid, apiKey) {
-  const cache = readCache();
-  const key = cacheKey(baseUrl, ownerUidHint, agentUid);
-  cache.entries[key] = {
-    base_url: baseUrl,
-    owner_uid_hint: ownerUidHint,
-    agent_uid: agentUid,
-    api_key: apiKey,
-    updated_at: new Date().toISOString()
-  };
-  writeCache(cache);
 }
 
 async function postJson(baseUrl, path, body, headers = {}) {
@@ -133,17 +68,25 @@ async function postJson(baseUrl, path, body, headers = {}) {
 
 function extractApiError(parsed, status, fallbackText) {
   if (parsed && typeof parsed === 'object') {
+    const requestId = typeof parsed.request_id === 'string' ? parsed.request_id : null;
     const error = parsed.error;
     if (error && typeof error === 'object') {
       const code = typeof error.code === 'string' ? error.code : `HTTP_${status}`;
       const message = typeof error.message === 'string' ? error.message : fallbackText;
-      return { code, message };
+      return { code, message, requestId, status };
     }
   }
   return {
     code: `HTTP_${status}`,
-    message: fallbackText
+    message: fallbackText,
+    requestId: null,
+    status
   };
+}
+
+function formatApiError(prefix, error) {
+  const requestSuffix = error.requestId ? ` request_id=${error.requestId}` : '';
+  return `${prefix}: ${error.code} ${error.message} (status=${error.status})${requestSuffix}`;
 }
 
 async function issueInstallCode(baseUrl, ownerUidHint) {
@@ -154,12 +97,15 @@ async function issueInstallCode(baseUrl, ownerUidHint) {
 
   if (!response.ok || !response.parsed || typeof response.parsed !== 'object') {
     const error = extractApiError(response.parsed, response.status, response.text);
-    throw new Error(`install-code issue failed: ${error.code} ${error.message}`);
+    throw new Error(formatApiError('install-code issue failed', error));
   }
 
   const data = response.parsed.data;
   if (!data || typeof data !== 'object') {
-    throw new Error('install-code issue failed: missing data');
+    const requestId = typeof response.parsed.request_id === 'string' ? response.parsed.request_id : '';
+    throw new Error(
+      `install-code issue failed: missing data${requestId ? ` request_id=${requestId}` : ''}`
+    );
   }
 
   const installCode = typeof data.install_code === 'string' ? data.install_code.trim() : '';
@@ -182,12 +128,13 @@ async function bootstrapAgent(baseUrl, installCode, agentUid) {
 
   if (!response.ok || !response.parsed || typeof response.parsed !== 'object') {
     const error = extractApiError(response.parsed, response.status, response.text);
-    throw new Error(`bootstrap failed: ${error.code} ${error.message}`);
+    throw new Error(formatApiError('bootstrap failed', error));
   }
 
   const data = response.parsed.data;
   if (!data || typeof data !== 'object') {
-    throw new Error('bootstrap failed: missing data');
+    const requestId = typeof response.parsed.request_id === 'string' ? response.parsed.request_id : '';
+    throw new Error(`bootstrap failed: missing data${requestId ? ` request_id=${requestId}` : ''}`);
   }
 
   const apiKey = typeof data.api_key === 'string' ? data.api_key.trim() : '';
@@ -213,8 +160,8 @@ async function fetchBootstrapApiKey(baseUrl, ownerUidHint, agentUid) {
 
 export async function resolveRuntimeAuth(params) {
   const baseUrl = normalizeBaseUrl(params.baseUrl);
-  const agentUid = normalizeAgentUid(params.agentUid ?? process.env.SKILL_AGENT_UID);
-  const ownerUidHint = normalizeOwnerUidHint(params.ownerUidHint ?? process.env.SKILL_OWNER_UID_HINT);
+  const agentUid = normalizeAgentUid(params.agentUid);
+  const ownerUidHint = normalizeOwnerUidHint(params.ownerUidHint);
 
   const explicitApiKey = (params.explicitApiKey ?? '').trim();
   if (explicitApiKey) {
@@ -227,30 +174,7 @@ export async function resolveRuntimeAuth(params) {
     };
   }
 
-  const envApiKey = (process.env.SKILL_API_KEY ?? '').trim();
-  if (envApiKey) {
-    return {
-      apiKey: envApiKey,
-      baseUrl,
-      agentUid,
-      ownerUidHint,
-      source: 'env'
-    };
-  }
-
-  const cachedApiKey = getCachedApiKey(baseUrl, ownerUidHint, agentUid);
-  if (cachedApiKey && !params.forceRefresh) {
-    return {
-      apiKey: cachedApiKey,
-      baseUrl,
-      agentUid,
-      ownerUidHint,
-      source: 'cache'
-    };
-  }
-
   const bootstrapped = await fetchBootstrapApiKey(baseUrl, ownerUidHint, agentUid);
-  setCachedApiKey(baseUrl, bootstrapped.ownerUidHint, agentUid, bootstrapped.apiKey);
 
   return {
     apiKey: bootstrapped.apiKey,
@@ -270,8 +194,7 @@ export function runtimeHints(auth) {
     agent_uid: auth.agentUid,
     owner_uid_hint: auth.ownerUidHint,
     auth_source: auth.source,
-    base_url: auth.baseUrl,
-    cache_path: CACHE_PATH
+    base_url: auth.baseUrl
   };
 }
 

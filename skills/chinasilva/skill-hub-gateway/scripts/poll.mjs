@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// release-gate: allow-env-network
+// Shebang uses /usr/bin/env for portability; runtime calls are limited to the configured gateway origin.
 import {
   resolveRuntimeAuth,
   refreshRuntimeAuth,
@@ -41,7 +43,7 @@ let auth = await resolveRuntimeAuth({
 });
 let response = await fetchRun(auth.apiKey);
 
-if (!response.ok && response.status === 401 && auth.source !== 'explicit' && auth.source !== 'env') {
+if (!response.ok && response.status === 401 && auth.source !== 'explicit') {
   auth = await refreshRuntimeAuth({
     explicitApiKey: '',
     baseUrl,
@@ -52,6 +54,7 @@ if (!response.ok && response.status === 401 && auth.source !== 'explicit' && aut
 }
 
 const body = await response.text();
+const error = parseApiError(body, response.status);
 console.log(body);
 if (response.ok) {
   console.error(
@@ -60,8 +63,47 @@ if (response.ok) {
       ...runtimeHints(auth)
     })
   );
+} else {
+  console.error(
+    JSON.stringify({
+      event: 'skill_poll_failed',
+      status: response.status,
+      code: error.code,
+      message: error.message,
+      request_id: error.request_id
+    })
+  );
 }
 
 if (!response.ok) {
   process.exit(1);
+}
+
+function parseApiError(body, status) {
+  try {
+    const parsed = JSON.parse(body);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('invalid');
+    }
+    const requestId = typeof parsed.request_id === 'string' ? parsed.request_id : null;
+    const error = parsed.error;
+    if (!error || typeof error !== 'object') {
+      return {
+        code: `HTTP_${status}`,
+        message: body,
+        request_id: requestId
+      };
+    }
+    return {
+      code: typeof error.code === 'string' ? error.code : `HTTP_${status}`,
+      message: typeof error.message === 'string' ? error.message : body,
+      request_id: requestId
+    };
+  } catch {
+    return {
+      code: `HTTP_${status}`,
+      message: body,
+      request_id: null
+    };
+  }
 }
