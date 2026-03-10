@@ -1,11 +1,17 @@
 {
   "owner": "davinwang",
   "slug": "github-memory-sync",
-  "displayName": "Github Memory Sync",
+  "displayName": "GitHub Memory Sync",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772170113284,
-    "commit": "https://github.com/openclaw/skills/commit/095865ee4f7ae5ebd68cd1f0ee1772599099679c"
+    "version": "1.1.0",
+    "publishedAt": 1773010175693,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772170113284,
+      "commit": "https://github.com/openclaw/skills/commit/095865ee4f7ae5ebd68cd1f0ee1772599099679c"
+    }
+  ]
 }

@@ -1,49 +1,87 @@
-# GitHub Memory Sync
+# 📦 GitHub Memory Sync
 
-📝 将 OpenClaw 的 memory 文件同步到 GitHub 进行备份和版本控制。
+将 OpenClaw 完整工作空间配置同步到 GitHub 进行备份和版本控制。
 
-## 快速开始
+## ✅ 功能特性
 
-### 1. 准备 GitHub Token
+- ✅ **完整备份** - 同步所有配置文件（SOUL.md, IDENTITY.md, USER.md, MEMORY.md, TOOLS.md 等）
+- ✅ **记忆文件** - 同步 memory/*.md 日常记忆
+- ✅ **技能备份** - 同步 skills/ 自定义技能
+- ✅ **一键恢复** - 从 GitHub 拉取配置到新服务器
+- ✅ **状态检查** - 查看本地和远程的差异
+- ✅ **定时备份** - 支持 cron 自动备份
+- ✅ **增量同步** - 只同步变化的文件
 
-1. 访问 https://github.com/settings/tokens/new
-2. 选择 **Classic** token 类型
-3. 勾选 **repo** 权限（完整仓库控制）
-4. 生成并复制 Token
+## 🚀 快速开始
 
-### 2. 创建仓库
-
-在 GitHub 上创建一个新的 **Private** 仓库，例如：
-- `yourusername/openclaw-memory-backup`
-
-### 3. 配置环境变量
+### 1. 配置环境变量
 
 ```bash
-export GITHUBTOKEN="ghp_xxxxxxxxxxxxxxxxx"
-export GITHUB_REPO="yourusername/openclaw-memory-backup"
+export GITHUBTOKEN="github_pat_xxx"
+export GITHUB_REPO="username/openclaw-memory"
+export WORKSPACE_DIR="/root/.openclaw/workspace"
 ```
 
-或者在 `~/.openclaw/openclaw.json` 中配置。
-
-### 4. 开始使用
+### 2. 同步到 GitHub
 
 ```bash
-# 初始化（首次使用）
-~/.openclaw/workspace/skills/github-memory-sync/sync.sh init
-
-# 推送更新
-~/.openclaw/workspace/skills/github-memory-sync/sync.sh push
-
-# 拉取更新
-~/.openclaw/workspace/skills/github-memory-sync/sync.sh pull
-
-# 查看状态
-~/.openclaw/workspace/skills/github-memory-sync/sync.sh status
+cd /root/.openclaw/workspace/skills/github-memory-sync
+bash sync.sh push
 ```
 
-## 安全提示
+### 3. 从 GitHub 恢复
 
-- 🔒 使用 **Private** 仓库
-- 🔐 不要泄露 Token
-- 🔄 定期轮换 Token
-- ⏰ 设置 Token 过期时间
+```bash
+bash sync.sh pull
+```
+
+## 📋 同步文件列表
+
+### 核心文件
+- ✅ SOUL.md - AI 人格定义
+- ✅ IDENTITY.md - AI 身份定义
+- ✅ USER.md - 用户信息
+- ✅ MEMORY.md - 长期记忆
+- ✅ TOOLS.md - 工具配置
+- ✅ HEARTBEAT.md - 心跳任务
+- ✅ AGENTS.md - 工作指南
+- ✅ memory/*.md - 日常记忆文件
+
+### 可选文件
+- ✅ skills/ - 自定义技能
+- ✅ avatars/ - 头像图片
+- ✅ BOOTSTRAP.md - 初始化脚本
+
+## ⏰ 定时备份
+
+### 添加自动备份任务
+
+```bash
+# 每天凌晨 2:30 自动备份
+(crontab -l 2>/dev/null; echo "30 2 * * * /root/.openclaw/workspace/skills/github-memory-sync/cron-backup.sh") | crontab -
+```
+
+### 查看备份日志
+
+```bash
+tail -f /var/log/openclaw-memory-sync.log
+```
+
+## 📖 完整文档
+
+- [SKILL.md](./SKILL.md) - 技能详细说明
+- [CRON.md](./CRON.md) - 定时任务配置指南
+
+## 🔒 安全提醒
+
+- ⚠️ 使用 Private 仓库
+- ⚠️ 保护 GitHub Token
+- ⚠️ 定期轮换 Token
+- ⚠️ 不要同步敏感凭证
+
+---
+
+**版本**: 1.1.0  
+**作者**: OpenClaw Workspace  
+**许可**: MIT  
+**GitHub**: https://github.com/davinwang/openclaw-memory
