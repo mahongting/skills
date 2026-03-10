@@ -5,6 +5,11 @@ description: Manual Telegram slash-style command to start/finish OpenAI Codex OA
 
 Run `scripts/codex_auth.py` to generate a login URL and apply callback URL tokens to `auth-profiles.json`.
 
+## Safe defaults
+- Treat callback URLs/tokens as sensitive and never echo full values.
+- Use queued apply flow for controlled restart behavior.
+- See `RISK.md` for allowed/denied operation boundaries.
+
 ## Commands
 - `/codex_auth` → selector (discovered profiles)
 - `/codex_auth <profile>`
@@ -36,8 +41,15 @@ python3 skills/codex-auth/scripts/codex_auth.py finish --profile default --callb
 python3 skills/codex-auth/scripts/codex_auth.py status
 ```
 
+## Safety posture
+- No remote shell execution (`curl|bash`, `wget|sh`) is allowed by this skill.
+- No `sudo`/SSH/system package mutation is performed by this skill.
+- OAuth callback URLs are sensitive: never echo full callback URLs or tokens in chat output.
+- Writes are limited to auth profile state files with lock-based coordination.
+
 ## Notes
 - Uses the same OpenAI Codex OAuth constants/method as OpenClaw onboarding (`auth.openai.com` + localhost callback).
+- Endpoint trust boundary: OpenAI auth hosts + localhost callback flow only; do not send callbacks/tokens to third-party hosts.
 - Writes `~/.openclaw/agents/main/agent/auth-profiles.json` with file locking to reduce race risk while gateway is running.
 - Profile IDs map as:
   - `default` -> `openai-codex:default` (or first discovered codex profile if default missing)
