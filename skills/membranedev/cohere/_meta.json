@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "cohere",
+  "displayName": "Cohere",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773190942856,
+    "commit": null
+  },
+  "history": []
+}
