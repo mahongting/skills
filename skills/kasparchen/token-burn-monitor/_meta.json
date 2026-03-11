@@ -1,0 +1,11 @@
+{
+  "owner": "kasparchen",
+  "slug": "token-burn-monitor",
+  "displayName": "Token Burn Monitor",
+  "latest": {
+    "version": "5.0.0",
+    "publishedAt": 1773200360191,
+    "commit": null
+  },
+  "history": []
+}
