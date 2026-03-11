@@ -1,8 +1,16 @@
 ---
-name: amap-search
+AIGC:
+    ContentProducer: Minimax Agent AI
+    ContentPropagator: Minimax Agent AI
+    Label: AIGC
+    ProduceID: 9103e36fae9832e590afcd44e8e661b9
+    PropagateID: 9103e36fae9832e590afcd44e8e661b9
+    ReservedCode1: 3044022064b465ee9a4fc7cc5f130c10ac6dcc23c88ed9cf0825e11ac0b44d8dc5cb5eb502207d111a3ee510eaf93d88e50739db4be679533dfcdc87b8761eea987b32b67dc5
+    ReservedCode2: 3046022100c7fa3fccc38a9178d256556b35556647dfd764505ccd4b5d597c47fd73aad536022100ff62961abc308e60e38feee707b83bf716db90dcb305e0ec304cf9a7e1768c74
 description: 高德地图全功能工具 - 集成POI搜索、路径规划、天气查询、公交查询、实时路况等。/Gaode Map All-in-One - POI search, route planning, weather, bus, traffic.
+icon: "\U0001F5FA️"
+name: amap-search
 version: 2.0.0
-icon: 🗺️
 ---
 
 # 🗺️ 高德地图全功能工具 (amap-search)
@@ -261,3 +269,21 @@ A: 驾车(driving)、步行(walking)、公交(transit)三种方式。
 
 - 高德开放平台：https://lbs.amap.com/
 - OpenClaw 社区：https://clawd.org.cn/
+
+---
+
+## ⚠️ 免责声明
+
+**本技能仅供学习交流使用，免费提供，不收取任何费用。**
+
+1. **数据准确性**：本工具依赖高德开放平台 API，返回的数据由高德提供，我们不对数据的准确性、完整性、及时性做任何保证。
+
+2. **使用风险**：因使用本技能导致的任何直接或间接损失（包括但不限于商业损失、数据丢失、时间损失），我们不承担任何责任。
+
+3. **API 稳定性**：高德 API 可能存在服务不稳定、调用限制、接口变更等情况，可能导致功能不可用。
+
+4. **用户责任**：用户需自行确保 API Key 的安全妥善使用，遵守高德开放平台的服务条款。
+
+5. **无担保**：本技能按「原样」提供，不提供任何明示或暗示的担保。
+
+**使用本技能即表示您理解并同意上述免责声明。**
