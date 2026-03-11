@@ -1,0 +1,11 @@
+{
+  "owner": "karryklein",
+  "slug": "system-resource-report",
+  "displayName": "System Resource Report",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773048505390,
+    "commit": null
+  },
+  "history": []
+}
