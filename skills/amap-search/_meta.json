@@ -1,9 +1,9 @@
 {
   "owner": "mahongting",
   "slug": "amap-search",
-  "displayName": "AMap Search - Gaode Map Nearby Search",
+  "displayName": "AMap Search - Gaode Map All-in-One",
   "latest": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "publishedAt": 1770585600000,
     "commit": "https://github.com/mahongting/skills/commit/main"
   },
