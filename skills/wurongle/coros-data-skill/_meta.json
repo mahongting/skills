@@ -1,0 +1,11 @@
+{
+  "owner": "wurongle",
+  "slug": "coros-data-skill",
+  "displayName": "查询高驰（COROS）运动手表的跑步运动数据",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773112992332,
+    "commit": null
+  },
+  "history": []
+}
