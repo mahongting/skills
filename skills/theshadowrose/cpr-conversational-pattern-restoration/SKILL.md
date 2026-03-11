@@ -26,6 +26,9 @@ Modern LLMs are over-trained toward sterile, corporate communication patterns. C
 
 | File | Purpose |
 |------|---------|
+| `QUICKSTART_TIERED.md` | **START HERE if new** — Tier 1 (5 min), Tier 2 (30 min), Tier 3 (full). Don't install more than you need. |
+| `INSTALLATION.md` | Security transparency guide — exact system prompt block, file locations, what "prompt override" means, sandboxed testing steps |
+| `ROLLBACK.md` | Full uninstall & downgrade guide — backup procedure, exact removal steps, emergency kill switch |
 | `README.md` | Full overview, architecture, philosophy, FAQ |
 | `BASELINE_TEMPLATE.md` | **START HERE** — Define YOUR personality's authentic voice |
 | `RESTORATION_FRAMEWORK.md` | Core methodology — 6 universal patterns across personality types |

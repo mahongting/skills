@@ -1,11 +1,17 @@
 {
   "owner": "theshadowrose",
   "slug": "cpr-conversational-pattern-restoration",
-  "displayName": "CPR — Conversational Pattern Restoration V4.2",
+  "displayName": "Cpr Conversational Pattern Restoration",
   "latest": {
-    "version": "4.2.0",
-    "publishedAt": 1772940267496,
-    "commit": "https://github.com/openclaw/skills/commit/8df8f45a491d0740d9d7d411eb9e662e879450d4"
+    "version": "4.2.3",
+    "publishedAt": 1773146460109,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "4.2.0",
+      "publishedAt": 1772940267496,
+      "commit": "https://github.com/openclaw/skills/commit/8df8f45a491d0740d9d7d411eb9e662e879450d4"
+    }
+  ]
 }

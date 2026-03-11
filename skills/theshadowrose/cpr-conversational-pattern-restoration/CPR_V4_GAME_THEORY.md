@@ -448,8 +448,7 @@ Reason: increasing validation creates self-reinforcing sycophancy loops.
 ## Acknowledgments
 
 Game theory framework: Halthasar (Yesterday AI) — Game Theory Library v2.0  
-CPR methodology: Shadow Rose  
-Integration and formalization: Agent Smith  
+CPR methodology + integration: Shadow Rose  
 Audit: Claude Opus (independent technical review, 2026-03-01)
 
 Theoretical foundations:
