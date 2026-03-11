@@ -3,9 +3,15 @@
   "slug": "kannaka-eye",
   "displayName": "Kannaka Eye",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772990115430,
-    "commit": "https://github.com/openclaw/skills/commit/627c71d67082a069a660af065cabc4c6f29388dc"
+    "version": "1.0.1",
+    "publishedAt": 1773103634659,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772990115430,
+      "commit": "https://github.com/openclaw/skills/commit/627c71d67082a069a660af065cabc4c6f29388dc"
+    }
+  ]
 }
