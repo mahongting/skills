@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-高德地图 POI 搜索脚本
-用法: python poi_search.py <command> [options]
+Gaode Map POI Search Script
+Usage: python poi_search.py <command> [options]
 """
 
 import argparse
@@ -13,7 +13,7 @@ import sys
 
 
 def ip_location(key, ip=None):
-    """IP定位 - 获取用户当前所在城市"""
+    """IP location - Get user's current city"""
     base_url = "https://restapi.amap.com/v3/ip"
     
     params = {
@@ -35,7 +35,7 @@ def ip_location(key, ip=None):
 
 
 def search_poi(key, keyword, city=None, location=None, radius=5000, page=1, offset=20):
-    """关键字搜索POI"""
+    """Keyword search POI"""
     base_url = "https://restapi.amap.com/v3/place/text"
     
     params = {
@@ -64,7 +64,7 @@ def search_poi(key, keyword, city=None, location=None, radius=5000, page=1, offs
 
 
 def search_nearby(key, location, radius, keyword, page=1, offset=20):
-    """周边搜索POI"""
+    """Nearby search POI"""
     base_url = "https://restapi.amap.com/v3/place/around"
     
     params = {
@@ -89,7 +89,7 @@ def search_nearby(key, location, radius, keyword, page=1, offset=20):
 
 
 def geocode(key, address, city=None):
-    """地理编码 - 地址转坐标"""
+    """Geocoding - Address to coordinates"""
     base_url = "https://restapi.amap.com/v3/geocode/geo"
     
     params = {
@@ -112,8 +112,8 @@ def geocode(key, address, city=None):
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
-    """计算两点之间的距离（米）"""
-    R = 6371000  # 地球半径（米）
+    """Calculate distance between two points (in meters)"""
+    R = 6371000  # Earth radius in meters
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
     delta_phi = math.radians(lat2 - lat1)
@@ -128,16 +128,16 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 
 def format_ip_results(data, json_output=False):
-    """格式化IP定位结果"""
+    """Format IP location results"""
     if data.get("status") != "1":
-        msg = f"查询失败: {data.get('info', '未知错误')}"
+        msg = f"Query failed: {data.get('info', 'Unknown error')}"
         if json_output:
             return {"error": msg}
         print(msg)
         return None
     
-    province = data.get("province", "未知")
-    city = data.get("city", "未知")
+    province = data.get("province", "Unknown")
+    city = data.get("city", "Unknown")
     adcode = data.get("adcode", "")
     
     result = {"province": province, "city": city, "adcode": adcode}
@@ -145,17 +145,17 @@ def format_ip_results(data, json_output=False):
     if json_output:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
-        print(f"您的当前位置: {province} {city}")
-        print(f"城市代码: {adcode}")
+        print(f"Your location: {province} {city}")
+        print(f"City code: {adcode}")
         print()
     
     return result
 
 
 def format_poi_results(data, user_location=None, json_output=False):
-    """格式化POI搜索结果"""
+    """Format POI search results"""
     if data.get("status") != "1":
-        msg = f"搜索失败: {data.get('info', '未知错误')}"
+        msg = f"Search failed: {data.get('info', 'Unknown error')}"
         if json_output:
             print(json.dumps({"error": msg}, ensure_ascii=False))
         else:
@@ -164,7 +164,7 @@ def format_poi_results(data, user_location=None, json_output=False):
     
     pois = data.get("pois", [])
     if not pois:
-        msg = "未找到相关结果"
+        msg = "No results found"
         if json_output:
             print(json.dumps({"results": [], "count": 0}, ensure_ascii=False))
         else:
@@ -183,7 +183,7 @@ def format_poi_results(data, user_location=None, json_output=False):
         city = poi.get("city", "")
         district = poi.get("district", "")
         
-        # 计算距离（如果是关键字搜索，需要手动计算）
+        # Calculate distance (for keyword search, need manual calculation)
         distance = poi.get("distance", None)
         if not distance and user_location and location:
             try:
@@ -194,15 +194,15 @@ def format_poi_results(data, user_location=None, json_output=False):
             except:
                 pass
         
-        # 格式化距离
+        # Format distance
         distance_str = ""
         if distance:
             try:
                 d = int(distance)
                 if d >= 1000:
-                    distance_str = f"{d/1000:.1f}公里"
+                    distance_str = f"{d/1000:.1f}km"
                 else:
-                    distance_str = f"{d}米"
+                    distance_str = f"{d}m"
             except:
                 distance_str = str(distance)
         
@@ -222,21 +222,21 @@ def format_poi_results(data, user_location=None, json_output=False):
     if json_output:
         print(json.dumps(output, ensure_ascii=False, indent=2))
     else:
-        print(f"共找到 {count} 个结果:\n")
+        print(f"Found {count} results:\n")
         for i, item in enumerate(results, 1):
             print(f"{i}. {item['name']}")
-            print(f"   地址: {item['address']}")
+            print(f"   Address: {item['address']}")
             if item.get("distance"):
-                print(f"   距离: {item['distance']}")
+                print(f"   Distance: {item['distance']}")
             if item["telephone"]:
-                print(f"   电话: {item['telephone']}")
+                print(f"   Phone: {item['telephone']}")
             print()
 
 
 def format_geocode_results(data, json_output=False):
-    """格式化地理编码结果"""
+    """Format geocoding results"""
     if data.get("status") != "1":
-        msg = f"查询失败: {data.get('info', '未知错误')}"
+        msg = f"Query failed: {data.get('info', 'Unknown error')}"
         if json_output:
             print(json.dumps({"error": msg}, ensure_ascii=False))
         else:
@@ -245,7 +245,7 @@ def format_geocode_results(data, json_output=False):
     
     geocodes = data.get("geocodes", [])
     if not geocodes:
-        msg = "未找到该地址的坐标"
+        msg = "No coordinates found for this address"
         if json_output:
             print(json.dumps({"error": msg}, ensure_ascii=False))
         else:
@@ -264,41 +264,41 @@ def format_geocode_results(data, json_output=False):
         print(json.dumps({"results": results}, ensure_ascii=False, indent=2))
     else:
         for item in results:
-            print(f"地址: {item['address']}")
-            print(f"坐标: {item['location']}")
-            print(f"层级: {item['level']}")
+            print(f"Address: {item['address']}")
+            print(f"Coordinates: {item['location']}")
+            print(f"Level: {item['level']}")
             print()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="高德地图 POI 搜索工具")
-    parser.add_argument("--json", action="store_true", help="输出JSON格式")
-    subparsers = parser.add_subparsers(dest="command", help="子命令")
+    parser = argparse.ArgumentParser(description="Gaode Map POI Search Tool")
+    parser.add_argument("--json", action="store_true", help="Output JSON format")
+    subparsers = parser.add_subparsers(dest="command", help="Subcommands")
     
-    # ip 子命令
-    ip_parser = subparsers.add_parser("ip", help="IP定位 - 获取当前位置")
-    ip_parser.add_argument("--key", required=True, help="高德API Key")
-    ip_parser.add_argument("--ip", help="指定IP，不填则自动获取")
+    # ip subcommand
+    ip_parser = subparsers.add_parser("ip", help="IP location - Get current location")
+    ip_parser.add_argument("--key", required=True, help="Gaode API Key")
+    ip_parser.add_argument("--ip", help="Specify IP, auto-detect if not provided")
     
-    # poi 子命令
-    poi_parser = subparsers.add_parser("poi", help="关键字搜索POI")
-    poi_parser.add_argument("--key", required=True, help="高德API Key")
-    poi_parser.add_argument("--keyword", required=True, help="搜索关键词")
-    poi_parser.add_argument("--city", help="城市名称")
-    poi_parser.add_argument("--location", help="经纬度坐标，格式: 经度,纬度，用于计算距离")
-    poi_parser.add_argument("--radius", type=int, default=5000, help="搜索半径(米)")
-    poi_parser.add_argument("--page", type=int, default=1, help="页码")
-    poi_parser.add_argument("--offset", type=int, default=20, help="每页数量")
+    # poi subcommand
+    poi_parser = subparsers.add_parser("poi", help="Keyword search POI")
+    poi_parser.add_argument("--key", required=True, help="Gaode API Key")
+    poi_parser.add_argument("--keyword", required=True, help="Search keyword")
+    poi_parser.add_argument("--city", help="City name")
+    poi_parser.add_argument("--location", help="Coordinates (lat,lon) for distance calculation")
+    poi_parser.add_argument("--radius", type=int, default=5000, help="Search radius (meters)")
+    poi_parser.add_argument("--page", type=int, default=1, help="Page number")
+    poi_parser.add_argument("--offset", type=int, default=20, help="Results per page")
     
-    # geo 子命令
-    geo_parser = subparsers.add_parser("geo", help="地理编码 - 地址转坐标")
-    geo_parser.add_argument("--key", required=True, help="高德API Key")
-    geo_parser.add_argument("--address", required=True, help="地址")
-    geo_parser.add_argument("--city", help="城市名称")
+    # geo subcommand
+    geo_parser = subparsers.add_parser("geo", help="Geocoding - Address to coordinates")
+    geo_parser.add_argument("--key", required=True, help="Gaode API Key")
+    geo_parser.add_argument("--address", required=True, help="Address")
+    geo_parser.add_argument("--city", help="City name")
     
     args = parser.parse_args()
     
-    # 通用参数
+    # Common parameter
     json_output = args.json
     
     if args.command == "ip":
@@ -307,10 +307,10 @@ def main():
         
     elif args.command == "poi":
         if args.location:
-            # 周边搜索
+            # Nearby search
             data = search_nearby(args.key, args.location, args.radius, args.keyword, args.page, args.offset)
         else:
-            # 关键字搜索
+            # Keyword search
             data = search_poi(args.key, args.keyword, args.city, args.location, args.radius, args.page, args.offset)
         format_poi_results(data, args.location, json_output)
         
