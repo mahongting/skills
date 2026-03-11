@@ -1,0 +1,11 @@
+{
+  "owner": "zt1314p-design",
+  "slug": "tencentcloud-ocr",
+  "displayName": "TencentCloud OCR",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1773199193101,
+    "commit": null
+  },
+  "history": []
+}
