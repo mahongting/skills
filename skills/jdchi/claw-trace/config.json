@@ -1,0 +1,12 @@
+{
+  "enable": true,
+  "mode": "full",
+  "enabledModules": {
+    "table": true,
+    "flowchart": true,
+    "statistics": false,
+    "detailedLog": false,
+    "saveToFile": false
+  },
+  "language": "auto"
+}
