@@ -1,0 +1,11 @@
+{
+  "owner": "openjobsai",
+  "slug": "openjobs-people-search",
+  "displayName": "Openjobs People Search",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773213889602,
+    "commit": null
+  },
+  "history": []
+}
